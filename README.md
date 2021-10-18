@@ -14,7 +14,7 @@ Follow instruction in https://minikube.sigs.k8s.io/docs/start/
 
 ## 3. Install rabbitmq chart
     helm repo add bitnami https://charts.bitnami.com/bitnami
-    helm install rabbitmq bitnami/rabbitmq -f rabbitmq/values.yaml
+    helm install rabbitmq bitnami/rabbitmq -f config/rabbitmq/values.yaml
 
 
 ## 4. Prometheus-UI
