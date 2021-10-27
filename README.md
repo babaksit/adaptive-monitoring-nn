@@ -66,6 +66,7 @@ To access the RabbitMQ Prometheus metrics, get the RabbitMQ Prometheus URL by ru
     https://grafana.com/grafana/dashboards/10991
 
 ## 9. Limit minikube node bandwidth
+
     minikube ssh
     sudo apt-get update
     sudo apt-get install git -y
@@ -75,4 +76,11 @@ To access the RabbitMQ Prometheus metrics, get the RabbitMQ Prometheus URL by ru
     cd wondershaper/
     sudo ./wondershaper -a eth0 -u 8192 -d 8192
 
+## 9. Run RabbitMQ benchmark
 
+First create a user, e.g. test, in RabbitMQ management (http://127.0.0.1:15672/). 
+An example for running the benchmark is the following command:
+
+    docker run -it --net=host --rm pivotalrabbitmq/perf-test:latest -x 1 -y 2 -u "throughput-test-1" -a --id "test 1" -s 400000  --uri amqp://{user}:{pass}@127.0.0.1:5672
+
+For documentation: https://rabbitmq.github.io/rabbitmq-perf-test/stable/htmlsingle/
