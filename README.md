@@ -20,8 +20,8 @@ Verify Calico installation
 ## 3. Install rabbitmq chart
     helm repo add bitnami https://charts.bitnami.com/bitnami
     helm install rabbitmq bitnami/rabbitmq -f config/rabbitmq/values.yaml
-
-
+    #For disabling the rabbitmq prometheus plugin use the following command
+    helm install rabbitmq bitnami/rabbitmq -f config/rabbitmq/values_disabled_prometheus.yaml
 ## 4. Prometheus-UI
 	kubectl port-forward service/prometheus-kube-prometheus-prometheus 9090
  
@@ -38,9 +38,11 @@ pwd: prom-operator
 
     Credentials:
     echo "Username      : user"
-    echo "Password      : $(kubectl get secret --namespace default rabbitmq -o jsonpath="{.data.rabbitmq-password}" | base64 --decode)"
-    echo "ErLang Cookie : $(kubectl get secret --namespace default rabbitmq -o jsonpath="{.data.rabbitmq-erlang-cookie}" | base64 --decode)"
-    
+[comment]: <> (    echo "Password      : $&#40;kubectl get secret --namespace default rabbitmq -o jsonpath="{.data.rabbitmq-password}" | base64 --decode&#41;")
+    export RABBITMQ_PASS=$(kubectl get secret --namespace default rabbitmq -o jsonpath="{.data.rabbitmq-password}" | base64 --decode)
+[comment]: <> (    echo "ErLang Cookie : $&#40;kubectl get secret --namespace default rabbitmq -o jsonpath="{.data.rabbitmq-erlang-cookie}" | base64 --decode&#41;")
+    export RABBITMQ_EC=$(kubectl get secret --namespace default rabbitmq -o jsonpath="{.data.rabbitmq-erlang-cookie}" | base64 --decode)
+
 To Access the RabbitMQ AMQP port:
 
     echo "URL : amqp://127.0.0.1:5672/"
@@ -74,13 +76,22 @@ To access the RabbitMQ Prometheus metrics, get the RabbitMQ Prometheus URL by ru
     sudo ip link set dev ifb0 up
     git clone https://github.com/magnific0/wondershaper.git
     cd wondershaper/
+    #set desired bandwidth limit in Kbps e.g. 8192
     sudo ./wondershaper -a eth0 -u 8192 -d 8192
 
 ## 9. Run RabbitMQ benchmark
 
 First create a user, e.g. test, in RabbitMQ management (http://127.0.0.1:15672/). 
-An example for running the benchmark is the following command:
+Follow the instructions stated here: https://github.com/rabbitmq/rabbitmq-perf-test/tree/main/html
 
-    docker run -it --net=host --rm pivotalrabbitmq/perf-test:latest -x 1 -y 2 -u "throughput-test-1" -a --id "test 1" -s 400000  --uri amqp://{user}:{pass}@127.0.0.1:5672
+An example for json config file could be as follow:
 
-For documentation: https://rabbitmq.github.io/rabbitmq-perf-test/stable/htmlsingle/
+    [{'name':      'consume',
+      'type':      'simple',
+      'uri': 'amqp://test:test@127.0.0.1:5672',
+      'params':    [{'time-limit':     60,
+                     'producer-count': 1,
+                     'consumer-count': 2,
+                     'producer-rate-limit': 2500,
+                     'min-msg-size' : 100
+                      }]}]
