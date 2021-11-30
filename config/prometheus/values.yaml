@@ -1,0 +1,111 @@
+
+## Using default values from https://github.com/grafana/helm-charts/blob/main/charts/grafana/values.yaml
+##
+grafana:
+  enabled: true
+  nodeSelector: 
+    kubernetes.io/hostname: minikube
+
+## Component scraping the kube api server
+##
+kubeApiServer:
+  enabled: true
+
+## Component scraping the kubelet and kubelet-hosted cAdvisor
+##
+kubelet:
+  enabled: true
+
+## Component scraping the kube controller manager
+##
+kubeControllerManager:
+  enabled: true
+
+coreDns:
+  enabled: true
+## Component scraping kubeDns. Use either this or coreDns
+##
+kubeDns:
+  enabled: true
+
+## Component scraping etcd
+##
+kubeEtcd:
+  enabled: true
+
+## Component scraping kube scheduler
+##
+kubeScheduler:
+  enabled: true
+
+## Component scraping kube proxy
+##
+kubeProxy:
+  enabled: true
+
+## Component scraping kube state metrics
+##
+kubeStateMetrics:
+  enabled: false
+  nodeSelector: 
+    kubernetes.io/hostname: minikube
+
+## Deploy node exporter as a daemonset to all nodes
+##
+nodeExporter:
+  enabled: false
+  serviceMonitor:
+    ## Scrape interval. If not set, the Prometheus default scrape interval is used.
+    ##
+    interval: "100ms"
+
+    ## proxyUrl: URL of a proxy that should be used for scraping.
+    ##
+    proxyUrl: 
+
+    ## How long until a scrape request times out. If not set, the Prometheus default scape timeout is used.
+    ##
+    scrapeTimeout: "100ms"
+
+
+## Configuration for alertmanager
+## ref: https://prometheus.io/docs/alerting/alertmanager/
+##
+alertmanager:
+
+  ## Deploy alertmanager
+  ##
+  enabled: false
+  nodeSelector: 
+    kubernetes.io/hostname: minikube
+
+## Manages Prometheus and Alertmanager components
+##
+prometheusOperator:
+  enabled: true
+  nodeSelector: 
+    kubernetes.io/hostname: minikube
+  kubeletService:
+    enabled: true
+      ## Create a servicemonitor for the operator
+  ##
+  serviceMonitor:
+    ## Scrape interval. If not set, the Prometheus default scrape interval is used.
+    ##
+    interval: ""
+    ## Scrape timeout. If not set, the Prometheus default scrape timeout is used.
+    scrapeTimeout: ""
+    selfMonitor: true
+## Deploy a Prometheus instance
+##
+prometheus:
+
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    ## Scrape interval. If not set, the Prometheus default scrape interval is used.
+    ##
+    interval: ""
+  prometheusSpec:
+    nodeSelector: 
+      kubernetes.io/hostname: minikube

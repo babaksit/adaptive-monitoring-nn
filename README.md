@@ -16,6 +16,10 @@ Verify Calico installation
     helm repo update
     helm install prometheus prometheus-community/kube-prometheus-stack 
 
+    # For enabling or disabling node exporter or other components of the kube-prometheus-stack you can use the 
+    # config/prometheus/values.yaml and upgrade helm chart with the following command
+    
+    helm upgrade prometheus prometheus-community/kube-prometheus-stack -f config/prometheus/values.yaml
 
 ## 3. Install rabbitmq chart
     helm repo add bitnami https://charts.bitnami.com/bitnami
