@@ -38,9 +38,7 @@ pwd: prom-operator
 
     Credentials:
     echo "Username      : user"
-[comment]: <> (    echo "Password      : $&#40;kubectl get secret --namespace default rabbitmq -o jsonpath="{.data.rabbitmq-password}" | base64 --decode&#41;")
     export RABBITMQ_PASS=$(kubectl get secret --namespace default rabbitmq -o jsonpath="{.data.rabbitmq-password}" | base64 --decode)
-[comment]: <> (    echo "ErLang Cookie : $&#40;kubectl get secret --namespace default rabbitmq -o jsonpath="{.data.rabbitmq-erlang-cookie}" | base64 --decode&#41;")
     export RABBITMQ_EC=$(kubectl get secret --namespace default rabbitmq -o jsonpath="{.data.rabbitmq-erlang-cookie}" | base64 --decode)
 
 To Access the RabbitMQ AMQP port:
