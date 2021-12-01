@@ -5,7 +5,8 @@
 Follow instruction in https://minikube.sigs.k8s.io/docs/start/
 <br />Start minikube with calico plugin
 
-    minikube start --network-plugin=cni --cni=calico
+    minikube start --nodes 2 --network-plugin=cni
+
 Verify Calico installation
 
     watch kubectl get pods -l k8s-app=calico-node -A
@@ -69,9 +70,9 @@ To access the RabbitMQ Prometheus metrics, get the RabbitMQ Prometheus URL by ru
 
     https://grafana.com/grafana/dashboards/10991
 
-## 9. Limit minikube node bandwidth
+## 9. Limit minikube second node bandwidth which contains rabbitmq
 
-    minikube ssh
+    minikube ssh -n minikube-m02
     sudo apt-get update
     sudo apt-get install git -y
     sudo ip link add name ifb0 type ifb
