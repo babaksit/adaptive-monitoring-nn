@@ -7,9 +7,6 @@ Follow instruction in https://minikube.sigs.k8s.io/docs/start/
 
     minikube start --nodes 2 --network-plugin=cni
 
-Verify Calico installation
-
-    watch kubectl get pods -l k8s-app=calico-node -A
 ## 2. Install prometheus chart
 
     helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
