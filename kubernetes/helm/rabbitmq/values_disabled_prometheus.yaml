@@ -436,8 +436,6 @@ podLabels: {}
 ## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
 ##
 podAnnotations: {}
-  # kubernetes.io/ingress-bandwidth: 1M
-  # kubernetes.io/egress-bandwidth: 1M
 
 ## @param updateStrategyType Update strategy type for RabbitMQ statefulset
 ## ref: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#update-strategies
@@ -860,7 +858,7 @@ service:
 ingress:
   ## @param ingress.enabled Enable ingress resource for Management console
   ##
-  enabled: true
+  enabled: false
 
   ## @param ingress.path Path for the default host. You may need to set this to '/*' in order to use this with ALB ingress controllers.
   ##
@@ -985,7 +983,7 @@ networkPolicy:
 metrics:
   ## @param metrics.enabled Enable exposing RabbitMQ metrics to be gathered by Prometheus
   ##
-  enabled: true
+  enabled: false
 
   ## @param metrics.plugins Plugins to enable Prometheus metrics in RabbitMQ
   ##
@@ -1010,12 +1008,12 @@ metrics:
     namespace: ""
     ## @param metrics.serviceMonitor.interval Specify the interval at which metrics should be scraped
     ##
-    interval: "100ms"
+    interval: 30s
     ## @param metrics.serviceMonitor.scrapeTimeout Specify the timeout after which the scrape is ended
     ## e.g:
     ## scrapeTimeout: 30s
     ##
-    scrapeTimeout: "100ms"
+    scrapeTimeout: ""
     ## @param metrics.serviceMonitor.relabellings Specify Metric Relabellings to add to the scrape endpoint
     ##
     relabellings: []
@@ -1124,7 +1122,7 @@ metrics:
 volumePermissions:
   ## @param volumePermissions.enabled Enable init container that changes the owner and group of the persistent volume(s) mountpoint to `runAsUser:fsGroup`
   ##
-  enabled: true
+  enabled: false
   ## @param volumePermissions.image.registry Init container volume-permissions image registry
   ## @param volumePermissions.image.repository Init container volume-permissions image repository
   ## @param volumePermissions.image.tag Init container volume-permissions image tag
