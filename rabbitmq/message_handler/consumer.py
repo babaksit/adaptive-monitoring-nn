@@ -1,33 +1,68 @@
-import pika, sys, os
+import logging
+
+from connection_handler import ConnectionHandler
+from pika.adapters.blocking_connection import BlockingChannel
 
 
-def main():
+class Consumer:
+    """
+    Producer class to publish messages
 
-    credentials = pika.PlainCredentials('guest', 'guest')
-    parameters = pika.ConnectionParameters('127.0.0.1',
-                                           5672,
-                                           '/',
-                                           credentials)
-    connection = pika.BlockingConnection(parameters)
-    channel = connection.channel()
+    """
 
-    channel.queue_declare(queue='hello')
+    def __init__(self, connection_handler: ConnectionHandler, channel: BlockingChannel,
+                 exchange: str, routing_key: str):
+        """
+        Initialize
 
+        Parameters
+        ----------
+        connection_handler : handle connection to RabbitMQ server
+        channel :  A BlockingChannel which msgs will be published on
+        exchange: Exchange name
+        routing_key: Routing Key which could be the queue name declared in @declare_queue function
+
+        """
+        self.connection_handler = connection_handler
+        self.channel = channel
+        self.exchange = exchange
+        self.routing_key = routing_key
+
+    @staticmethod
     def callback(ch, method, properties, body):
-        print(" [x] Received %r" % body)
+        """
+        Callback function to receive new messages
+        Parameters
+        ----------
+        ch :
+        method :
+        properties :
+        body :
 
-    channel.basic_consume(queue='hello', on_message_callback=callback, auto_ack=True)
+        Returns
+        -------
 
-    print(' [*] Waiting for messages. To exit press CTRL+C')
-    channel.start_consuming()
+        """
+        logging.info(" [x] Received %r" % body)
 
+    def start(self):
+        """
+        Start consuming
 
-if __name__ == '__main__':
-    try:
-        main()
-    except KeyboardInterrupt:
-        print('Interrupted')
-        try:
-            sys.exit(0)
-        except SystemExit:
-            os._exit(0)
+        Returns
+        -------
+
+        """
+        self.channel.basic_consume(queue=self.routing_key, on_message_callback=self.callback,
+                                   auto_ack=True)
+        self.channel.start_consuming()
+
+    def stop(self):
+        """
+        Stop consuming
+
+        Returns
+        -------
+
+        """
+        self.channel.stop_consuming()

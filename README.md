@@ -24,9 +24,10 @@ Follow instruction in https://minikube.sigs.k8s.io/docs/start/
     helm install rabbitmq bitnami/rabbitmq -f config/rabbitmq/values.yaml
     #For disabling the rabbitmq prometheus plugin use the following command
     helm install rabbitmq bitnami/rabbitmq -f config/rabbitmq/values_disabled_prometheus.yaml
+
 ## 4. Prometheus-UI
+
 	kubectl port-forward service/prometheus-kube-prometheus-prometheus 9090
- 
 
 ## 5. Grafana
 
