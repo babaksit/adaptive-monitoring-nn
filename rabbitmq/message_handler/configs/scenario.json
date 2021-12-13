@@ -1,0 +1,13 @@
+{
+  "name": "test",
+  "description": "First test",
+  "msg_size": "100 bytes",
+  "num_channels" : 1,
+  "num_producers" : 1,
+  "num_consumers" : 1,
+  "queue_name" : "test",
+  "exchange" : "",
+  "dataset_path": "../../dataset/data/ADDITION_1_2000_300_S.csv",
+  "time_column_name": "Time",
+  "value_column_name": "Value"
+}
