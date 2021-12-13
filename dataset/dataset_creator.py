@@ -80,5 +80,5 @@ class DatasetCreator:
 
 
 if __name__ == '__main__':
-    dc = DatasetCreator(100, 'S', "./data")
-    print(dc.create())
+    dc = DatasetCreator(5*60, 'S', "./data")
+    dc.create()
