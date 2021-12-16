@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 
 class DataserLoader:
@@ -8,7 +9,7 @@ class DataserLoader:
     """
 
     @staticmethod
-    def load_timeseries(dataset_path, time_col:str
+    def load_timeseries(dataset_path, time_col: str
                         , convert_to_duration_time=False) -> pd.DataFrame:
         """
         Loads a timeseries dataset as a pandas DataFrame
@@ -38,5 +39,5 @@ class DataserLoader:
 
 
 if __name__ == '__main__':
-    df = DataserLoader.load_timeseries("data/ADDITION_1_2000_300_S.csv", "Time", True)
+    df = DataserLoader.load_timeseries("../data/ADDITION_1_2000_300_S.csv", "Time", True)
     print(df)
