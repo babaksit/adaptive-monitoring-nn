@@ -1,0 +1,14 @@
+{
+  "dataset_type": "Method",
+  "dataset_path": "../../data/ADDITION_1_2000_300_S.csv",
+  "time_column": "Time",
+  "value_column": "Value",
+  "batch_size": 16,
+  "lstm_num_class": 1,
+  "lstm_hidden_size": 64,
+  "lstm_num_layers": 3,
+  "lstm_dropout": 0.2,
+  "learning_rate": 0.001,
+  "device": "cpu",
+  "num_epochs": 100
+}

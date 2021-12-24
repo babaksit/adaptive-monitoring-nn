@@ -27,9 +27,9 @@ def detailed_datetime(df: pd.DataFrame) -> pd.DataFrame:
     """
     df_features = (
         df.assign(second=df.index.second)
-            .assign(minute=df.index.minute)
-            .assign(hour=df.index.hour)
-            .assign(day_of_week=df.index.dayofweek)
+          .assign(minute=df.index.minute)
+          .assign(hour=df.index.hour)
+          .assign(day_of_week=df.index.dayofweek)
     )
 
     return df_features
