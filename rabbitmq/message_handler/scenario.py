@@ -11,6 +11,7 @@ from consumer import Consumer
 from dataset.dataset_loader import DataserLoader
 import pandas as pd
 
+
 class Scenario:
     """
     Scenario class that runs a scenario for given configs
