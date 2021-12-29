@@ -1,8 +1,11 @@
 {
   "dataset_type": "Method",
   "dataset_path": "../../data/ADDITION_1_2000_300_S.csv",
+  "model_save_dir": "../saved_models",
   "time_column": "Time",
   "value_column": "Value",
+  "val_size": 0.1,
+  "test_size": 0.1,
   "batch_size": 16,
   "lstm_num_class": 1,
   "lstm_hidden_size": 64,
@@ -10,5 +13,5 @@
   "lstm_dropout": 0.2,
   "learning_rate": 0.001,
   "device": "cpu",
-  "num_epochs": 100
+  "num_epochs": 40
 }

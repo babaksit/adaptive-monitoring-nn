@@ -8,7 +8,7 @@ from typing import List
 from connection_handler import ConnectionHandler
 from producer import Producer
 from consumer import Consumer
-from dataset.dataset_loader import DataserLoader
+from dataset.dataset_loader import DatasetLoader
 import pandas as pd
 
 
@@ -124,7 +124,7 @@ class Scenario:
         -------
 
         """
-        df = DataserLoader.load_timeseries(self.scenario_config['dataset_path'],
+        df = DatasetLoader.load_timeseries(self.scenario_config['dataset_path'],
                                            self.scenario_config['time_column_name'],
                                            True)
         cl = self.scenario_config['value_column_name']

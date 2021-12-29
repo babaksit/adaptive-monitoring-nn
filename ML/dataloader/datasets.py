@@ -1,15 +1,11 @@
-from typing import Union
-
 import pandas as pd
 import torch
-from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
 from torch.utils.data import Dataset
 from torch.utils.data.dataset import T_co
-from torch.utils import data
-from ML import features
+
 from ML.features.assign import Feature
-from torch.utils.data import Subset
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
+
 
 class MethodDataset(Dataset):
     """
@@ -18,53 +14,17 @@ class MethodDataset(Dataset):
 
     """
 
-    def __init__(self, dataset_path: str, time_col: str, value_col: str
-                 , features_list: list = None,
-                 scaler: Union[MinMaxScaler, StandardScaler] = None):
+    def __init__(self, df: pd.DataFrame, value_col: str):
         """
         Initialize
 
         Parameters
         ----------
-        dataset_path : Path to the timeseries dataset
-        time_col : Time column name
-        value_col: Value column name
-        features_list: list
-                  list of features to assign to the dataframe
-        scaler: scaler function to scale dataframe values
+        df : Input dataframe
+        value_col : value column name
         """
-
-        self.dataset_path = dataset_path
-        self.time_col = time_col
+        self.df = df
         self.value_col = value_col
-        self.df = pd.read_csv(dataset_path, parse_dates=True)
-        self.df[time_col] = pd.to_datetime(self.df[time_col])
-        self.df.set_index(time_col, inplace=True)
-        if features_list:
-            self.assign_features(features_list)
-        df_scaled = scaler.fit_transform(self.df.to_numpy())
-        self.df = pd.DataFrame(df_scaled, columns=self.df.columns)
-
-    def assign_features(self, features_list: list):
-        """
-        Assign features to the dataframe
-
-        Parameters
-        ----------
-        features_list : list of features
-
-        Returns
-        -------
-
-        """
-
-        for feature in features_list:
-            if feature == Feature.DETAILED_DATETIME:
-                self.df = features.assign.detailed_datetime(self.df)
-                continue
-            if feature == Feature.CYCLICAL:
-                self.df = features.assign.cyclical(self.df)
-                continue
 
     def __len__(self) -> int:
         """

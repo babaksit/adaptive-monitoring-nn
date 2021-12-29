@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 
-class DataserLoader:
+class DatasetLoader:
     """
     Class for loading different type of datasets
 
@@ -39,5 +39,5 @@ class DataserLoader:
 
 
 if __name__ == '__main__':
-    df = DataserLoader.load_timeseries("../data/ADDITION_1_2000_300_S.csv", "Time", True)
+    df = DatasetLoader.load_timeseries("../data/ADDITION_1_2000_300_S.csv", "Time", True)
     print(df)
