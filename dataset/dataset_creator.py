@@ -1,3 +1,4 @@
+import glob
 import os
 
 import pandas as pd
@@ -62,6 +63,7 @@ class DatasetCreator:
                              chunk_size: int, start_metric_name: str,
                              save_dir: str = None,
                              rabbitmq_modules: list = None,
+                             exchanges: list = None,
                              prometheus_url: str = "http://127.0.0.1:9090/") -> pd.DataFrame:
         """
         Create a pandas dataframe by querying prometheus metrics
@@ -88,9 +90,8 @@ class DatasetCreator:
         filter_metrics_name = [s for s in all_metrics_name if s.startswith(start_metric_name)]
         df_merge_list = []
 
-
         # prometheus unique save dir
-        prom_save_dir =  str(start_time) + " to " + str(end_time)
+        prom_save_dir = str(start_time) + " to " + str(end_time)
         # final save dir
         save_dir = os.path.join(save_dir, prom_save_dir)
         if not os.path.exists(save_dir):
@@ -116,7 +117,68 @@ class DatasetCreator:
                              + metric_name + ".csv"
             metric_df.to_csv(os.path.join(save_dir, save_file_name))
 
-            # These two dataframe has values for each rabbitmq modules
+        #     # These two dataframe have values for each rabbitmq modules
+        #     if metric_name == "rabbitmq_module_scrape_duration_seconds" or \
+        #             metric_name == "rabbitmq_module_up":
+        #         if 'module' in metric_df.columns:
+        #             for rabbitmq_module in rabbitmq_modules:
+        #                 module_df = metric_df.loc[metric_df['module'] == rabbitmq_module].copy()
+        #                 module_df.drop(module_df.columns.difference(['value']), 1, inplace=True)
+        #                 module_df.rename(columns={'value': metric_name + "_" + rabbitmq_module}, inplace=True)
+        #                 df_merge_list.append(module_df)
+        #         else:
+        #             logging.error("could not find module column in: " + metric_name)
+        #             continue
+        #     # These two dataframe have values for each rabbitmq exchanges
+        #     if metric_name == "rabbitmq_exchange_messages_published_in_total" or \
+        #             metric_name == "rabbitmq_exchange_messages_published_out_total":
+        #         if 'exchange' in metric_df.columns:
+        #             for exchange in exchanges:
+        #                 exchange_df = metric_df.loc[metric_df['exchange'] == exchange].copy()
+        #                 exchange_df.drop(exchange_df.columns.difference(['value']), 1, inplace=True)
+        #                 exchange_df.rename(columns={'value': metric_name + "_" + exchange}, inplace=True)
+        #                 df_merge_list.append(exchange_df)
+        #         else:
+        #             logging.error("could not find module column in: " + metric_name)
+        #             continue
+        #     else:
+        #         metric_df.drop(metric_df.columns.difference(['value']), 1, inplace=True)
+        #         metric_df.rename(columns={'value': metric_name}, inplace=True)
+        #         df_merge_list.append(metric_df)
+        #
+        # try:
+        #     result = pd.concat(df_merge_list, axis=1)
+        #     result.to_csv(os.path.join(save_dir, "PROMETHEUS_merged.csv"))
+        # except Exception as e:
+        #     logging.error("could not concat dataframes: " + str(e))
+
+    @staticmethod
+    def merge_prometheus_dfs(dir_path: str) -> pd.DataFrame:
+        """
+        Merge prometheus dataframes
+
+        Parameters
+        ----------
+        dir_path : str
+            directory path where prometheus csv files locate
+
+        Returns
+        -------
+        pd.DataFrame
+            merged dataframe
+        """
+        csv_files = glob.glob(dir_path + "/*.csv")
+
+        df_merge_list = []
+
+        rabbitmq_modules = ["connections", "shovel",
+                          "federation", "exchange",
+                          "node", "queue", "memory"]
+        exchanges = [""]
+        for csv in csv_files:
+            metric_name = os.path.basename(csv).replace(".csv", "").replace("PROMETHEUS_", "")
+            metric_df = pd.read_csv(csv, index_col="timestamp", header=0)
+            # These two dataframe have values for each rabbitmq modules
             if metric_name == "rabbitmq_module_scrape_duration_seconds" or \
                     metric_name == "rabbitmq_module_up":
                 if 'module' in metric_df.columns:
@@ -128,6 +190,20 @@ class DatasetCreator:
                 else:
                     logging.error("could not find module column in: " + metric_name)
                     continue
+            # These two dataframe have values for each rabbitmq exchanges
+            elif metric_name == "rabbitmq_exchange_messages_published_in_total" or \
+                    metric_name == "rabbitmq_exchange_messages_published_out_total":
+                if 'exchange' in metric_df.columns:
+                    for exchange in exchanges:
+                        # fill nan with empty string
+                        metric_df['exchange'] = metric_df['exchange'].fillna('')
+                        exchange_df = metric_df.loc[metric_df['exchange'] == exchange].copy()
+                        exchange_df.drop(exchange_df.columns.difference(['value']), 1, inplace=True)
+                        exchange_df.rename(columns={'value': metric_name + "_" + exchange}, inplace=True)
+                        df_merge_list.append(exchange_df)
+                else:
+                    logging.error("could not find module column in: " + metric_name)
+                    continue
             else:
                 metric_df.drop(metric_df.columns.difference(['value']), 1, inplace=True)
                 metric_df.rename(columns={'value': metric_name}, inplace=True)
@@ -135,24 +211,25 @@ class DatasetCreator:
 
         try:
             result = pd.concat(df_merge_list, axis=1)
-            result.to_csv(os.path.join(save_dir, "PROMETHEUS_merged.csv"))
+            result.to_csv(os.path.join(dir_path, "PROMETHEUS_merged.csv"))
         except Exception as e:
             logging.error("could not concat dataframes: " + str(e))
 
-
 if __name__ == '__main__':
-    # DatasetCreator.create_addition_1_method_df(12 * 60 * 60, 'S', "../data")
-    logging.basicConfig(filename='dataset_creator.log', encoding='utf-8', level=logging.DEBUG)
-    start_time = datetime(year=2021, month=12, day=21, hour=3, minute=00, second=00)
-    end_time = datetime(year=2021, month=12, day=21, hour=4, minute=00, second=00)
-    # start_time = datetime(year=2021, month=12, day=20, hour=22, minute=00, second=00)
-    # end_time = datetime(year=2021, month=12, day=21, hour=10, minute=00, second=00)
-    chunk_size = timedelta(seconds=1)
+    # # DatasetCreator.create_addition_1_method_df(12 * 60 * 60, 'S', "../data")
+    # logging.basicConfig(filename='dataset_creator.log', encoding='utf-8', level=logging.DEBUG)
+    # start_time = datetime(year=2021, month=12, day=21, hour=3, minute=00, second=00)
+    # end_time = datetime(year=2021, month=12, day=21, hour=4, minute=00, second=00)
+    # # start_time = datetime(year=2021, month=12, day=20, hour=22, minute=00, second=00)
+    # # end_time = datetime(year=2021, month=12, day=21, hour=10, minute=00, second=00)
+    # chunk_size = timedelta(seconds=1)
+    #
+    # DatasetCreator.create_prometheus_df(start_time=start_time, end_time=end_time,
+    #                                     chunk_size=chunk_size,
+    #                                     start_metric_name="rabbitmq",
+    #                                     save_dir="../data",
+    #                                     rabbitmq_modules=["connections", "shovel",
+    #                                                       "federation", "exchange",
+    #                                                       "node", "queue", "memory"])
 
-    DatasetCreator.create_prometheus_df(start_time=start_time, end_time=end_time,
-                                        chunk_size=chunk_size,
-                                        start_metric_name="rabbitmq",
-                                        save_dir="../data",
-                                        rabbitmq_modules=["connections", "shovel",
-                                                          "federation", "exchange",
-                                                          "node", "queue", "memory"])
+    DatasetCreator.merge_prometheus_dfs("/home/bsi/thesis/Adaptive_Monitoring_NN/data/prometheus_1h")
