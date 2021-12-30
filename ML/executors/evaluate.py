@@ -5,7 +5,7 @@ from typing import Union
 import numpy as np
 import pandas as pd
 import torch
-from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from torch import nn
 from torch.utils import data
@@ -92,6 +92,11 @@ def evaluate(model: nn.Module, test_loader: data.DataLoader,
     return predictions, values
 
 
+def calculate_metrics(df):
+    return {'mae' : mean_absolute_error(df.value, df.prediction),
+            'rmse' : mean_squared_error(df.value, df.prediction) ** 0.5,
+            'r2' : r2_score(df.value, df.prediction)}
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Train a time series network")
     parser.add_argument('--config-file', type=str,
@@ -112,7 +117,7 @@ if __name__ == '__main__':
     train_loader, val_loader, test_loader = dataloader.create_dataloaders()
     model = create_lstm(config, dataloader.get_num_features())
 
-    model_path = '/home/bsi/thesis/Adaptive_Monitoring_NN/ML/saved_models/lstm'
+    model_path = '../saved_models/lstm'
 
     model.load_state_dict(torch.load(model_path))
 
@@ -121,3 +126,5 @@ if __name__ == '__main__':
     df_result = format_predictions(predictions, values, test_loader.dataset.df, dataloader.scaler)
 
     print(df_result)
+    result_metrics = calculate_metrics(df_result)
+    print(result_metrics)

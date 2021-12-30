@@ -172,8 +172,8 @@ class DatasetCreator:
         df_merge_list = []
 
         rabbitmq_modules = ["connections", "shovel",
-                          "federation", "exchange",
-                          "node", "queue", "memory"]
+                            "federation", "exchange",
+                            "node", "queue", "memory"]
         exchanges = [""]
         for csv in csv_files:
             metric_name = os.path.basename(csv).replace(".csv", "").replace("PROMETHEUS_", "")
@@ -215,21 +215,22 @@ class DatasetCreator:
         except Exception as e:
             logging.error("could not concat dataframes: " + str(e))
 
+
 if __name__ == '__main__':
-    # # DatasetCreator.create_addition_1_method_df(12 * 60 * 60, 'S', "../data")
-    # logging.basicConfig(filename='dataset_creator.log', encoding='utf-8', level=logging.DEBUG)
+    # DatasetCreator.create_addition_1_method_df(12 * 60 * 60, 'S', "../data")
+    logging.basicConfig(filename='dataset_creator.log', level=logging.DEBUG)
     # start_time = datetime(year=2021, month=12, day=21, hour=3, minute=00, second=00)
     # end_time = datetime(year=2021, month=12, day=21, hour=4, minute=00, second=00)
-    # # start_time = datetime(year=2021, month=12, day=20, hour=22, minute=00, second=00)
-    # # end_time = datetime(year=2021, month=12, day=21, hour=10, minute=00, second=00)
-    # chunk_size = timedelta(seconds=1)
-    #
-    # DatasetCreator.create_prometheus_df(start_time=start_time, end_time=end_time,
-    #                                     chunk_size=chunk_size,
-    #                                     start_metric_name="rabbitmq",
-    #                                     save_dir="../data",
-    #                                     rabbitmq_modules=["connections", "shovel",
-    #                                                       "federation", "exchange",
-    #                                                       "node", "queue", "memory"])
+    start_time = datetime(year=2021, month=12, day=20, hour=22, minute=00, second=00)
+    end_time = datetime(year=2021, month=12, day=21, hour=10, minute=00, second=00)
+    chunk_size = timedelta(seconds=1)
 
-    DatasetCreator.merge_prometheus_dfs("/home/bsi/thesis/Adaptive_Monitoring_NN/data/prometheus_1h")
+    DatasetCreator.create_prometheus_df(start_time=start_time, end_time=end_time,
+                                        chunk_size=chunk_size,
+                                        start_metric_name="rabbitmq",
+                                        save_dir="../data/prometheus",
+                                        rabbitmq_modules=["connections", "shovel",
+                                                          "federation", "exchange",
+                                                          "node", "queue", "memory"])
+
+    # DatasetCreator.merge_prometheus_dfs("/home/bsi/thesis/Adaptive_Monitoring_NN/data/prometheus_1h")

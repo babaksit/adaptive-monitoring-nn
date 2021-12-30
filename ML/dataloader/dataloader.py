@@ -1,3 +1,5 @@
+import argparse
+import json
 from typing import Union
 
 import pandas as pd
@@ -6,12 +8,12 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from torch.utils import data
 
 from ML import features
-from ML.dataloader.datasets import MethodDataset
+from ML.dataloader.datasets import MethodDataset, PrometheusDataset
 from ML.features.assign import Feature
 
 
 class DataLoader:
-    def __init__(self, dataset_path: str, time_col: str, val_col: str, val_size: float,
+    def __init__(self, dataset_path: str, time_col: str, val_col: str or list, val_size: float,
                  test_size: float, batch_size: int, dataset_type: str
                  , features_list: list = None,
                  scaler: Union[MinMaxScaler, StandardScaler] = None):
@@ -22,27 +24,36 @@ class DataLoader:
         Parameters
         ----------
 
-        dataset_path : Path to the timeseries dataset
-        time_col : Time column name
-        val_col : Value column name
-        value_col: Value column name
-        val_size: size of validation data
-        test_size: size of test data
-        batch_size : batch size
-        dataset_type : type of the dataset
-        features_list: list of features to assign to the dataframe
-        scaler: scaler function to scale dataframe values
+        dataset_path : str
+            Path to the timeseries dataset
+        time_col : str
+            Time column name
+        val_col : str or list
+            Value column(s) name
+        val_size: float
+            size of validation data
+        test_size: float
+            size of test data
+        batch_size : int
+            batch size
+        dataset_type : str
+            type of the dataset
+        features_list: list
+            Features to assign to the dataframe
+        scaler: Union[MinMaxScaler, StandardScaler]
+            scaler function to scale dataframe values
 
 
         """
         self.val_col = val_col
+        self.time_col = time_col
         self.dataset_type = dataset_type
         self.batch_size = batch_size
         self.val_size = val_size
         self.test_size = test_size
-        self.df = pd.read_csv(dataset_path, parse_dates=True)
-        self.df[time_col] = pd.to_datetime(self.df[time_col])
-        self.df.set_index(time_col, inplace=True)
+        self.dataset_path = dataset_path
+        self.df = None
+        self.__create_df()
         self.train_loader = None
         self.val_loader = None
         self.test_loader = None
@@ -50,30 +61,52 @@ class DataLoader:
             self.__assign_features(features_list)
         self.scaler = scaler
 
-    def __get_train_val_test_df(self):
+    def __create_df(self):
         """
-        Split df to train, validation, test dataframes
+        Create Dataframe
+
         Returns
         -------
-        Splitted train, validation, test dataframes
+        None
+        """
+        # time column is in date time format
+        if self.time_col == "Time":
+            self.df = pd.read_csv(self.dataset_path, parse_dates=True)
+            self.df[self.time_col] = pd.to_datetime(self.df[self.time_col])
+            self.df.set_index(self.time_col, inplace=True)
+        # time column is in timestamp format
+        elif self.time_col == "timestamp":
+            self.df = pd.read_csv(self.dataset_path)
+            self.df[self.time_col] = pd.to_datetime(self.df[self.time_col], unit='s')
+            self.df.set_index(self.time_col, inplace=True)
+
+    def __get_train_val_test_df(self) -> list:
+        """
+        Split df to train, validation, test dataframes
+
+        Returns
+        -------
+        list[pd.Dataframe, pd.Dataframe, pd.Dataframe]
+            Splitted train, validation, test dataframes
 
         """
         train, test = train_test_split(self.df, test_size=(self.val_size + self.test_size), shuffle=False)
         val, test = train_test_split(self.df, test_size=self.test_size, shuffle=False)
-        #Avoiding pandas settingwithcopywarning using .copy()
+        # Avoiding pandas settingwithcopywarning using .copy()
         return train.copy(), val.copy(), test.copy()
 
-    def __assign_features(self, features_list: list):
+    def __assign_features(self, features_list: list) -> None:
         """
         A private function to assign features to the dataframe
 
         Parameters
         ----------
-        features_list : list of features
+        features_list : list
+            list of features
 
         Returns
         -------
-
+        None
         """
 
         for feature in features_list:
@@ -84,32 +117,38 @@ class DataLoader:
                 self.df = features.assign.cyclical(self.df)
                 continue
 
-    def create_dataloaders(self):
+    def create_dataloaders(self) -> list:
         """
         Create train val test dataloaders
+
         Returns
         -------
+        list[data.DataLoader, data.DataLoader, data.DataLoader]
+            train_loader, val_loader and test_loader
 
         """
 
         train, val, test = self.__get_train_val_test_df()
         if self.scaler:
-            for col in train.columns:
-                train[col] = self.scaler.fit_transform(train[col].values.reshape(-1, 1))
-            for col in val.columns:
-                val[col] = self.scaler.fit_transform(val[col].values.reshape(-1, 1))
-            for col in test.columns:
-                test[col] = self.scaler.fit_transform(test[col].values.reshape(-1, 1))
-            # train = pd.DataFrame(df_scaled, columns=train.columns)
-            # df_scaled = self.scaler.fit_transform(val)
-            # val = pd.DataFrame(df_scaled, columns=val.columns)
-            # df_scaled = self.scaler.fit_transform(test)
-            # test = pd.DataFrame(df_scaled, columns=test.columns)
+            train = pd.DataFrame(self.scaler.fit_transform(train), columns=train.columns)
+            val = pd.DataFrame(self.scaler.fit_transform(val), columns=val.columns)
+            test = pd.DataFrame(self.scaler.fit_transform(test), columns=test.columns)
+            # for col in train.columns:
+            #     train[col] = self.scaler.fit_transform(train[col].values.reshape(-1, 1))
+            # for col in val.columns:
+            #     val[col] = self.scaler.fit_transform(val[col].values.reshape(-1, 1))
+            # for col in test.columns:
+            #     test[col] = self.scaler.fit_transform(test[col].values.reshape(-1, 1))
 
         if self.dataset_type == "Method":
             train_dataset = MethodDataset(train, self.val_col)
             val_dataset = MethodDataset(val, self.val_col)
             test_dataset = MethodDataset(test, self.val_col)
+
+        if self.dataset_type == "Prometheus":
+            train_dataset = PrometheusDataset(train, self.val_col)
+            val_dataset = PrometheusDataset(val, self.val_col)
+            test_dataset = PrometheusDataset(test, self.val_col)
 
         self.train_loader = data.DataLoader(train_dataset, batch_size=self.batch_size,
                                             shuffle=False)
@@ -122,12 +161,45 @@ class DataLoader:
 
     def get_num_features(self) -> int:
         """
-        Number of features in created dataloaders
+        Getter function for returning number of features in created dataloaders
 
         Returns
         -------
-        Number of features in created dataloaders
+        int
+            Number of features in created dataloaders
         """
 
         X, _ = next(iter(self.train_loader))
         return X.shape[1]
+
+    def get_num_class(self) -> int:
+        """
+        Getter function for returning number of classes/targets in created dataloaders
+
+        Returns
+        -------
+        int
+            Number of classes in created dataloaders
+        """
+        _, y = next(iter(self.train_loader))
+        return y.shape[1]
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Train a time series network")
+    parser.add_argument('--config-file', type=str,
+                        help='Path to the config file', default="../configs/prom_config.json")
+    args = parser.parse_args()
+
+    with open(args.config_file) as f:
+        config = json.load(f)
+
+    features_list = [Feature.DETAILED_DATETIME, Feature.CYCLICAL]
+    scaler = MinMaxScaler()
+    dataloader = DataLoader(config['dataset_path'], config['time_column'],
+                            config['value_column'],
+                            config['val_size'], config['test_size'],
+                            config['batch_size'], config['dataset_type'],
+                            features_list, scaler)
+
+    train_loader, val_loader, test_loader = dataloader.create_dataloaders()
+    print(dataloader.get_num_class())

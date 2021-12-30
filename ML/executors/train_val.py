@@ -12,7 +12,7 @@ from ML.models.model_creator import create_lstm
 from ML.dataloader.dataloader import DataLoader
 from ML.features.assign import Feature
 
-seed = 25
+seed = 37
 
 if torch.cuda.is_available():
     torch.backends.cudnn.benchmark = True
@@ -25,7 +25,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="Train a time series network")
     parser.add_argument('--config-file', type=str,
-                        help='Path to the config file', default="../configs/config.json")
+                        help='Path to the config file', default="../configs/prom_config.json")
     args = parser.parse_args()
 
     with open(args.config_file) as f:
@@ -40,7 +40,7 @@ if __name__ == '__main__':
                             features_list, scaler)
 
     train_loader, val_loader, test_loader = dataloader.create_dataloaders()
-    model = create_lstm(config, dataloader.get_num_features())
+    model = create_lstm(config, dataloader.get_num_class(), dataloader.get_num_features())
     batch_size = config['batch_size']
     criterion = torch.nn.MSELoss()  # mean-squared error for regression
     optimizer = torch.optim.Adam(model.parameters(), lr=config['learning_rate'])
