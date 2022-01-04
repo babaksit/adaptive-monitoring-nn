@@ -11,6 +11,7 @@ from sklearn.preprocessing import MinMaxScaler
 from ML.models.model_creator import create_lstm
 from ML.dataloader.dataloader import DataLoader
 from ML.features.assign import Feature
+import pathlib
 
 seed = 37
 
@@ -31,8 +32,8 @@ if __name__ == '__main__':
     with open(args.config_file) as f:
         config = json.load(f)
 
-    if not os.path.exists(config['model_save_dir']):
-        os.makedirs(config['model_save_dir'])
+    # create model save directory
+    pathlib.Path(config['model_save_dir']).mkdir(parents=True, exist_ok=True)
 
     features_list = [Feature.DETAILED_DATETIME]
     scaler = MinMaxScaler()
