@@ -31,6 +31,9 @@ if __name__ == '__main__':
     with open(args.config_file) as f:
         config = json.load(f)
 
+    if not os.path.exists(config['model_save_dir']):
+        os.makedirs(config['model_save_dir'])
+
     features_list = [Feature.DETAILED_DATETIME]
     scaler = MinMaxScaler()
     dataloader = DataLoader(config['dataset_path'], config['time_column'],
