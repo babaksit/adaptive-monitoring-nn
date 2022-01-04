@@ -13,7 +13,7 @@ from ML.features.assign import Feature
 
 
 class DataLoader:
-    def __init__(self, dataset_path: str, time_col: str, val_col: str or list, val_size: float,
+    def __init__(self, dataset_path: str, time_col: str, val_size: float,
                  test_size: float, batch_size: int, dataset_type: str
                  , features_list: list = None,
                  scaler: Union[MinMaxScaler, StandardScaler] = None):
@@ -28,8 +28,6 @@ class DataLoader:
             Path to the timeseries dataset
         time_col : str
             Time column name
-        val_col : str or list
-            Value column(s) name
         val_size: float
             size of validation data
         test_size: float

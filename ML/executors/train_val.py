@@ -38,7 +38,6 @@ if __name__ == '__main__':
     features_list = [Feature.DETAILED_DATETIME]
     scaler = MinMaxScaler()
     dataloader = DataLoader(config['dataset_path'], config['time_column'],
-                            config['value_column'],
                             config['val_size'], config['test_size'],
                             config['batch_size'], config['dataset_type'],
                             features_list, scaler)
