@@ -95,4 +95,3 @@ if __name__ == '__main__':
     plt.title("Losses")
     plt.show()
     plt.close()
-    #

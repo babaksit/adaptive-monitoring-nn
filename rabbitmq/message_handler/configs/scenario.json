@@ -7,7 +7,7 @@
   "num_consumers" : 1,
   "queue_name" : "test",
   "exchange" : "",
-  "dataset_path": "../../data/ADDITION_1_2000_43200_S.csv",
+  "dataset_path": "../../data/ADDITION_1_2020_172800_S.csv",
   "time_column_name": "Time",
   "value_column_name": "Value"
 }

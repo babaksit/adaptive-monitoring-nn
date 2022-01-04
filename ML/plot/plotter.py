@@ -51,8 +51,8 @@ def plot_each_column(df: pd.DataFrame, plot_constant_cols: bool = False) -> None
 
 
 if __name__ == '__main__':
-    df = pd.read_csv("/home/bsi/thesis/Adaptive_Monitoring_NN/data/PROMETHEUS_merged.csv",
-                     index_col="timestamp", header=0)
+    df = pd.read_csv("/home/bsi/thesis/Adaptive_Monitoring_NN/data/PROMETHEUS_merged_v_0.0.2.csv",
+                     index_col=0, header=0)
     plot_each_column(df)
     # icols = list(range(13))
     # icols = list(chunks(icols, 5))

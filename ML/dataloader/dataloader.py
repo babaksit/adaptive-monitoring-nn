@@ -45,8 +45,8 @@ class DataLoader:
 
 
         """
-        self.val_col = val_col
         self.time_col = time_col
+        self.val_col = None
         self.dataset_type = dataset_type
         self.batch_size = batch_size
         self.val_size = val_size
@@ -79,6 +79,8 @@ class DataLoader:
             self.df = pd.read_csv(self.dataset_path)
             self.df[self.time_col] = pd.to_datetime(self.df[self.time_col], unit='s')
             self.df.set_index(self.time_col, inplace=True)
+
+        self.val_col = self.df.columns
 
     def __get_train_val_test_df(self) -> list:
         """
@@ -183,6 +185,7 @@ class DataLoader:
         """
         _, y = next(iter(self.train_loader))
         return y.shape[1]
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Train a time series network")
