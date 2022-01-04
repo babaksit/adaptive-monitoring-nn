@@ -95,9 +95,6 @@ if __name__ == '__main__':
             print(f"[{epoch}/{num_epochs}] Training loss: {training_loss:.4f}\t "
                   f"Validation loss: {validation_loss:.4f}")
 
-
-
-
     plt.plot(training_loss_ls, label="Training loss")
     plt.plot(val_loss_ls, label="Validation loss")
     plt.legend()

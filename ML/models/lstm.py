@@ -10,7 +10,9 @@ class LSTM(nn.Module):
     LSTM class using pytorch nn.LSTM
     """
 
-    def __init__(self, num_class: int, input_size: int, hidden_size: int, num_layers: int, dropout: float):
+    def __init__(self, num_class: int, input_size: int,
+                 hidden_size: int, num_layers: int, dropout: float,
+                 device: str):
         """
         Initialize
 
@@ -33,7 +35,7 @@ class LSTM(nn.Module):
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.num_layers = num_layers
-
+        self.device = device
         # batch_first was set to true so that the input and output tensors are provided
         # as (batch, seq, feature) instead of (seq, batch, feature)
 
@@ -57,11 +59,11 @@ class LSTM(nn.Module):
         """
         # hidden state
         h = Variable(torch.zeros(
-            self.num_layers, x.size(0), self.hidden_size))
+            self.num_layers, x.size(0), self.hidden_size)).to(self.device)
 
         # internal state
         c = Variable(torch.zeros(
-            self.num_layers, x.size(0), self.hidden_size))
+            self.num_layers, x.size(0), self.hidden_size)).to(self.device)
 
         # lstm with input, hidden, and internal state
         output, (hout, _) = self.lstm(x, (h, c))

@@ -22,6 +22,6 @@ def create_lstm(config: Dict[str, Any], num_class: int, input_size: int) -> LSTM
     """
     model = LSTM(num_class, input_size,
                  config['lstm_hidden_size'], config['lstm_num_layers'],
-                 config['lstm_dropout'])
+                 config['lstm_dropout'],config['device'])
 
     return model
