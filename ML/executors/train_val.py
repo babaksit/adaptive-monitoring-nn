@@ -69,7 +69,7 @@ if __name__ == '__main__':
             loss = criterion(y_batch, y_hat)
             loss.backward()
             optimizer.step()
-            batch_losses.append(loss.detach().numpy())
+            batch_losses.append(loss.detach().cpu().numpy())
 
         training_loss = np.mean(batch_losses)
         training_loss_ls.append(training_loss)
