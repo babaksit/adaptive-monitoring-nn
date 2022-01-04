@@ -46,7 +46,7 @@ kubeProxy:
 ## Component scraping kube state metrics
 ##
 kubeStateMetrics:
-  enabled: false
+  enabled: true
   nodeSelector: 
     kubernetes.io/hostname: minikube
 

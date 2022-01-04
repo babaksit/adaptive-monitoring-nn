@@ -16,6 +16,15 @@ nodeSelector:
   kubernetes.io/hostname: minikube-m02
 
 
+## Init Container parameters
+## Change the owner and group of the persistent volume(s) mountpoint(s) to 'runAsUser:fsGroup' on each component
+## values from the securityContext section of the component
+##
+volumePermissions:
+  ## @param volumePermissions.enabled Enable init container that changes the owner and group of the persistent volume(s) mountpoint to `runAsUser:fsGroup`
+  ##
+  enabled: true
+
 ## @section Metrics Parameters
 
 ## Prometheus Metrics

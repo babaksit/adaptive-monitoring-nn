@@ -34,9 +34,9 @@ affinity: {}
 
 loglevel: debug
 rabbitmq:
-  url: http://10.244.1.4:15672
+  url: http://10.106.138.43:15672
   user: user
-  password: kvvMYGCrfO
+  password: WGpsHxZFLu
   # If existingPasswordSecret is set then password is ignored
   existingPasswordSecret: ~
   existingPasswordSecretKey: password
