@@ -179,6 +179,7 @@ class DatasetCreator:
                 logging.error("Metric dataframe could not be parsed and merged for metric name: " + metric_name)
         try:
             result = pd.concat(df_merge_list, axis=1)
+            result.index.name = "Time"
             result.to_csv(os.path.join(dir_path, "PROMETHEUS_merged.csv"))
         except Exception as e:
             logging.error("could not concat dataframes: " + str(e))
