@@ -53,6 +53,9 @@ if __name__ == '__main__':
     training_loss_ls = []
     val_loss_ls = []
     num_epochs = config['num_epochs']
+    model_save_path = os.path.join(config["model_save_dir"],
+                                   f'{model}_{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+
     # Train the model
     for epoch in range(num_epochs):
         batch_losses = []
@@ -70,7 +73,7 @@ if __name__ == '__main__':
 
         training_loss = np.mean(batch_losses)
         training_loss_ls.append(training_loss)
-
+        best_val_loss =  float("inf")
         with torch.no_grad():
             batch_val_losses = []
             model.eval()
@@ -82,16 +85,18 @@ if __name__ == '__main__':
                 val_loss = criterion(y_val, yhat).item()
                 batch_val_losses.append(val_loss)
             validation_loss = np.mean(batch_val_losses)
+            if validation_loss < best_val_loss:
+                best_val_loss = validation_loss
+                torch.save(model.state_dict(), model_save_path)
+
             val_loss_ls.append(validation_loss)
 
             # if (epoch <= 10) | (epoch % 10 == 0):
             print(f"[{epoch}/{num_epochs}] Training loss: {training_loss:.4f}\t "
                   f"Validation loss: {validation_loss:.4f}")
 
-    model_save_path = os.path.join(config["model_save_dir"],
-                                   f'{model}_{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
 
-    torch.save(model.state_dict(), model_save_path)
+
 
     plt.plot(training_loss_ls, label="Training loss")
     plt.plot(val_loss_ls, label="Validation loss")
