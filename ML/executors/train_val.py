@@ -52,8 +52,9 @@ if __name__ == '__main__':
     training_loss_ls = []
     val_loss_ls = []
     num_epochs = config['num_epochs']
+    save_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     model_save_path = os.path.join(config["model_save_dir"],
-                                   f'{model}_{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+                                   f'{model}_{save_time}')
 
     # Train the model
     for epoch in range(num_epochs):
@@ -99,5 +100,6 @@ if __name__ == '__main__':
     plt.plot(val_loss_ls, label="Validation loss")
     plt.legend()
     plt.title("Losses")
+    plt.savefig(os.path.join(config["plots_save_dir"], f'Losses_{save_time}_.png'))
     plt.show()
     plt.close()
