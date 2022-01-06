@@ -12,24 +12,35 @@ Follow instruction in https://minikube.sigs.k8s.io/docs/start/
     helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
     helm repo add stable https://charts.helm.sh/stable
     helm repo update
-    helm install prometheus prometheus-community/kube-prometheus-stack 
+    helm install prometheus prometheus-community/kube-prometheus-stack -f helm/prometheus/values.yaml
 
     # For enabling or disabling node exporter or other components of the kube-prometheus-stack you can use the 
-    # config/prometheus/values.yaml and upgrade helm chart with the following command
+    # helm/prometheus/values.yaml and upgrade helm chart with the following command
     
-    helm upgrade prometheus prometheus-community/kube-prometheus-stack -f config/prometheus/values.yaml
+   
 
 ## 3. Install rabbitmq chart
     helm repo add bitnami https://charts.bitnami.com/bitnami
-    helm install rabbitmq bitnami/rabbitmq -f config/rabbitmq/values.yaml
-    #For disabling the rabbitmq prometheus plugin use the following command
-    helm install rabbitmq bitnami/rabbitmq -f config/rabbitmq/values_disabled_prometheus.yaml
+    helm install rabbitmq bitnami/rabbitmq -f helm/rabbitmq/values.yaml
+   
+## 4. Export RabbitMQ Parameters
 
-## 4. Prometheus-UI
+    Credentials:
+    echo "Username      : user"
+    export RABBITMQ_PASS=$(kubectl get secret --namespace default rabbitmq -o jsonpath="{.data.rabbitmq-password}" | base64 --decode)
+    export RABBITMQ_EC=$(kubectl get secret --namespace default rabbitmq -o jsonpath="{.data.rabbitmq-erlang-cookie}" | base64 --decode)
 
+## 5. Install RabbitMQ Exporter
+
+     export RABBITMQ_URL=http://$(kubectl get service/rabbitmq -o jsonpath='{.spec.clusterIP}'):15672
+     helm install prometheus-rabbitmq-exporter prometheus-community/prometheus-rabbitmq-exporter -f helm/rabbitmq_exporter/values.yaml --set rabbitmq.url=$RABBITMQ_URL --set rabbitmq.user=user --set rabbitmq.password=$RABBITMQ_PASS 
+
+## 6. Check if RabbitMQ Exporter is scraping by Prometheus
+    
 	kubectl port-forward service/prometheus-kube-prometheus-prometheus 9090
+Open 127.0.0.1:9090 in browser and check in targets section
 
-## 5. Grafana
+## 7. Grafana
 
     kubectl port-forward deployment/prometheus-grafana 3000
 
@@ -37,38 +48,8 @@ Grafna default values are as follow:
 user: admin
 pwd: prom-operator
 
-## 6. RabbitMQ 
 
-    Credentials:
-    echo "Username      : user"
-    export RABBITMQ_PASS=$(kubectl get secret --namespace default rabbitmq -o jsonpath="{.data.rabbitmq-password}" | base64 --decode)
-    export RABBITMQ_EC=$(kubectl get secret --namespace default rabbitmq -o jsonpath="{.data.rabbitmq-erlang-cookie}" | base64 --decode)
-
-To Access the RabbitMQ AMQP port:
-
-    echo "URL : amqp://127.0.0.1:5672/"
-    kubectl port-forward --namespace default svc/rabbitmq 5672:5672
-
-To Access the RabbitMQ Management interface:
-
-    echo "URL : http://127.0.0.1:15672/"
-    kubectl port-forward --namespace default svc/rabbitmq 15672:15672
-
-To access the RabbitMQ Prometheus metrics, get the RabbitMQ Prometheus URL by running:
-
-    kubectl port-forward --namespace default svc/rabbitmq 9419:9419 &
-    echo "Prometheus Metrics URL: http://127.0.0.1:9419/metrics"
-
-## 7. RabbitMQ prometheus metrics
-    
-    kubectl port-forward --namespace default svc/rabbitmq 9419:9419
-    http://127.0.0.1:9419/metrics
-
-## 8. Add RabbitMQ overview dashboard
-
-    https://grafana.com/grafana/dashboards/10991
-
-## 9. Limit minikube second node bandwidth which contains rabbitmq
+## 8. Limit minikube second node bandwidth which contains rabbitmq pod
 
     minikube ssh -n minikube-m02
     sudo apt-get update
