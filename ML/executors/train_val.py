@@ -60,7 +60,8 @@ if __name__ == '__main__':
         batch_losses = []
         model.train()
         for x_batch, y_batch in train_loader:
-            x_batch = x_batch.view([batch_size, -1, dataloader.get_num_features()]).to(device)
+            bs = x_batch.shape[0]
+            x_batch = x_batch.view([bs, -1, dataloader.get_num_features()]).to(device)
             optimizer.zero_grad()
             y_batch = y_batch.to(device)
             y_hat = model(x_batch)
@@ -72,7 +73,7 @@ if __name__ == '__main__':
 
         training_loss = np.mean(batch_losses)
         training_loss_ls.append(training_loss)
-        best_val_loss =  float("inf")
+        best_val_loss = float("inf")
         with torch.no_grad():
             batch_val_losses = []
             model.eval()

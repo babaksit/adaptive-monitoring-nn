@@ -1,5 +1,6 @@
 import argparse
 import json
+import logging
 from typing import Union
 
 import pandas as pd
@@ -77,7 +78,8 @@ class DataLoader:
             self.df = pd.read_csv(self.dataset_path)
             self.df[self.time_col] = pd.to_datetime(self.df[self.time_col], unit='s')
             self.df.set_index(self.time_col, inplace=True)
-
+        else:
+            raise ValueError("time_col is not recognizable")
         self.val_col = self.df.columns
 
     def __get_train_val_test_df(self) -> list:
@@ -130,9 +132,10 @@ class DataLoader:
 
         train, val, test = self.__get_train_val_test_df()
         if self.scaler:
-            train = pd.DataFrame(self.scaler.fit_transform(train), columns=train.columns)
-            val = pd.DataFrame(self.scaler.fit_transform(val), columns=val.columns)
-            test = pd.DataFrame(self.scaler.fit_transform(test), columns=test.columns)
+
+            train = pd.DataFrame(self.scaler.fit_transform(train), columns=train.columns, index=train.index)
+            val = pd.DataFrame(self.scaler.fit_transform(val), columns=val.columns, index=val.index)
+            test = pd.DataFrame(self.scaler.fit_transform(test), columns=test.columns, index=test.index)
             # for col in train.columns:
             #     train[col] = self.scaler.fit_transform(train[col].values.reshape(-1, 1))
             # for col in val.columns:
