@@ -111,12 +111,12 @@ class DatasetCreator:
         for metric_name in filter_metrics_name:
             start_time = datetime.strptime(start_time_str, date_format_str)
             for i in range(num_timedelta_hours):
-                end_time = start_time + timedelta(timedelta_hours=timedelta_hours)
-                start_time_str = start_time.strftime(date_format_str)
+                end_time = start_time + timedelta(hours=timedelta_hours)
+                start_time_str_tmp = start_time.strftime(date_format_str)
                 end_time_str = end_time.strftime(date_format_str)
                 p = query.Prometheus(prometheus_url)
-                res = p.query_range(metric_name, start_time_str, end_time_str, step)
-                save_path = save_dir + metric_name + ".csv"
+                res = p.query_range(metric_name, start_time_str_tmp, end_time_str, step)
+                save_path = os.path.join(save_dir, (metric_name + ".csv"))
                 if i == 0:
                     res.to_csv(save_path)
                 else:
@@ -124,12 +124,14 @@ class DatasetCreator:
                 start_time = end_time
 
     @staticmethod
-    def merge_rabbitmq_prometheus_dfs(dir_path: str) -> pd.DataFrame:
+    def merge_rabbitmq_prometheus_dfs(dir_path: str, drop_constant_cols: bool = True) -> pd.DataFrame:
         """
         Merge rabbitmq prometheus dataframes
 
         Parameters
         ----------
+        drop_constant_cols : bool
+            If to drop constant/same value columns in the dataframes
         dir_path : str
             directory path where prometheus csv files locate
 
@@ -158,7 +160,7 @@ class DatasetCreator:
                             module_df = metric_df[[column]].copy()
                             module_df.rename(columns={column: metric_name + "_" + rabbitmq_module}, inplace=True)
                             df_merge_list.append(module_df)
-            # # These two dataframe have values for each rabbitmq exchanges
+            # These two dataframe have values for each rabbitmq exchanges
             # elif metric_name == "rabbitmq_exchange_messages_published_in_total" or \
             #         metric_name == "rabbitmq_exchange_messages_published_out_total":
             #     if 'exchange' in metric_df.columns:
@@ -178,8 +180,11 @@ class DatasetCreator:
             else:
                 logging.error("Metric dataframe could not be parsed and merged for metric name: " + metric_name)
         try:
+
             result = pd.concat(df_merge_list, axis=1)
             result.index.name = "Time"
+            if drop_constant_cols:
+                result = result.loc[:, (result != result.iloc[0]).any()]
             result.to_csv(os.path.join(dir_path, "PROMETHEUS_merged.csv"))
         except Exception as e:
             logging.error("could not concat dataframes: " + str(e))
@@ -190,16 +195,19 @@ if __name__ == '__main__':
     # logging.basicConfig(filename='dataset_creator.log', level=logging.DEBUG)
     # # start_time = datetime(year=2021, month=12, day=21, hour=3, minute=00, second=00)
     # # end_time = datetime(year=2021, month=12, day=21, hour=4, minute=00, second=00)
-    # start_time = datetime(year=2021, month=12, day=31, hour=18, minute=00, second=00)
-    # end_time = datetime(year=2022, month=1, day=2, hour=18, minute=00, second=00)
+    # start_time = datetime(year=2021, month=1, day=6, hour=23, minute=30, second=00)
+    # end_time = datetime(year=2022, month=1, day=7, hour=10, minute=30, second=00)
     # chunk_size = timedelta(seconds=1)
     #
-    # DatasetCreator.create_prometheus_df(start_time=start_time, end_time=end_time,
-    #                                     chunk_size=chunk_size,
+    # DatasetCreator.create_prometheus_df(start_time_str="2022-01-06T23:30:00Z",
+    #                                     timedelta_hours=1,
+    #                                     num_timedelta_hours=10,
     #                                     start_metric_name="rabbitmq",
     #                                     save_dir="../data/prometheus",
-    #                                     rabbitmq_modules=["connections", "shovel",
-    #                                                       "federation", "exchange",
-    #                                                       "node", "queue", "memory"])
+    #                                     step="1s")
+    # DatasetCreator.create_prometheus_df(start_time=start_time, end_time=end_time,
+    #
+    #                                     start_metric_name="rabbitmq",
+    #                                     save_dir="../data/prometheus")
 
-    DatasetCreator.merge_rabbitmq_prometheus_dfs("../data/prometheus/2021-12-31 18:00:00 to 2022-01-02 18:00:00")
+    DatasetCreator.merge_rabbitmq_prometheus_dfs("../data/prometheus/2022-01-06T23:30:00Z")
