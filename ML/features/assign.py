@@ -18,11 +18,13 @@ def detailed_datetime(df: pd.DataFrame) -> pd.DataFrame:
 
     Parameters
     ----------
-    df : Input dataframe
+    df : pd.DataFrame
+        Input dataframe
 
     Returns
     -------
-    Assigned features dataframe
+    pd.DataFrame
+        Assigned features dataframe
 
     """
     df_features = (
@@ -52,7 +54,8 @@ def cyclical(df: pd.DataFrame) -> pd.DataFrame:
 
     Returns
     -------
-    Dataframe with assigned cyclical features as sin_{col_name} and cos_{col_name}
+    pd.DataFrame
+        Dataframe with assigned cyclical features as sin_{col_name} and cos_{col_name}
 
     """
     cols = ["second", "minute", "hour", "day", "day_of_week"]

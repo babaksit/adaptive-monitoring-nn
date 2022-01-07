@@ -123,6 +123,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Train a time series network")
     parser.add_argument('--config-file', type=str,
                         help='Path to the config file', default="../configs/prom_config.json")
+    parser.add_argument('--model-path', type=str,
+                        help='Path to the saved model')
     args = parser.parse_args()
 
     with open(args.config_file) as f:
@@ -139,7 +141,7 @@ if __name__ == '__main__':
 
     model = create_lstm(config, dataloader.get_num_class(), dataloader.get_num_features())
 
-    model_path = '../saved_models/lstm'
+    model_path = args.model_path
 
     model.load_state_dict(torch.load(model_path))
 
