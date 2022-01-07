@@ -35,6 +35,9 @@ if __name__ == '__main__':
     # create model save directory
     pathlib.Path(config['model_save_dir']).mkdir(parents=True, exist_ok=True)
 
+    # create model save directory
+    pathlib.Path(config['plots_save_dir']).mkdir(parents=True, exist_ok=True)
+
     features_list = [Feature.DETAILED_DATETIME]
     scaler = MinMaxScaler()
     dataloader = DataLoader(config['dataset_path'], config['time_column'],
