@@ -152,7 +152,7 @@ if __name__ == '__main__':
 
 
     df_preds.to_csv("df_preds.csv")
-    df_preds.to_csv("df_vals.csv")
+    df_vals.to_csv("df_vals.csv")
 
     logging.debug("df_preds: "+ str(df_preds))
     logging.debug("df_vals: " + str(df_vals))
