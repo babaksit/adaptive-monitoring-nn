@@ -150,9 +150,9 @@ if __name__ == '__main__':
 
     df_preds, df_vals = format_predictions(predictions, values, dataloader, dataloader.scaler)
 
-    logging.debug("df_preds: "+ df_preds)
-    logging.debug("df_vals: " + df_vals)
+    logging.debug("df_preds: "+ str(df_preds))
+    logging.debug("df_vals: " + str(df_vals))
 
     result_metrics = calculate_metrics(df_preds, df_vals)
 
-    logging.debug("result_metrics: " + result_metrics)
+    logging.debug("result_metrics: " + str(result_metrics))
