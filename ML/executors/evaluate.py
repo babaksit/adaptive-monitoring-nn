@@ -143,7 +143,7 @@ if __name__ == '__main__':
 
     model_path = args.model_path
 
-    model.load_state_dict(torch.load(model_path))
+    model.load_state_dict(torch.load(model_path)).to(config['device'])
 
     predictions, values = evaluate(model, test_loader, config['device'], dataloader.get_num_features())
 
