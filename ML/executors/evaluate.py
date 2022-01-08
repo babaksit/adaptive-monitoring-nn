@@ -92,8 +92,8 @@ def evaluate(model: nn.Module, test_loader: data.DataLoader,
             x_test = x_test.view([batch_size, -1, num_features]).to(device)
             y_test = y_test.to(device)
             yhat = model(x_test)
-            predictions.append(yhat.to(device).detach().numpy())
-            values.append(y_test.to(device).detach().numpy())
+            predictions.append(yhat.to(device).detach().cpu().numpy())
+            values.append(y_test.to(device).detach().cpu().numpy())
 
     return predictions, values
 
