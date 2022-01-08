@@ -129,7 +129,7 @@ if __name__ == '__main__':
 
     with open(args.config_file) as f:
         config = json.load(f)
-
+    logging.basicConfig(filename='evaluate.log', level=logging.DEBUG)
     features_list = [Feature.DETAILED_DATETIME, Feature.CYCLICAL]
     scaler = MinMaxScaler()
     dataloader = DataLoader(config['dataset_path'], config['time_column'],
@@ -149,6 +149,10 @@ if __name__ == '__main__':
     predictions, values = evaluate(model, test_loader, device, dataloader.get_num_features())
 
     df_preds, df_vals = format_predictions(predictions, values, dataloader, dataloader.scaler)
+
+
+    df_preds.to_csv("df_preds.csv")
+    df_preds.to_csv("df_vals.csv")
 
     logging.debug("df_preds: "+ str(df_preds))
     logging.debug("df_vals: " + str(df_vals))
