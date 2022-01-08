@@ -140,12 +140,13 @@ if __name__ == '__main__':
     train_loader, val_loader, test_loader = dataloader.create_dataloaders()
 
     model = create_lstm(config, dataloader.get_num_class(), dataloader.get_num_features())
-
+    device = config['device']
+    model.to(device)
     model_path = args.model_path
 
-    model.load_state_dict(torch.load(model_path)).to(config['device'])
+    model.load_state_dict(torch.load(model_path))
 
-    predictions, values = evaluate(model, test_loader, config['device'], dataloader.get_num_features())
+    predictions, values = evaluate(model, test_loader, device, dataloader.get_num_features())
 
     df_preds, df_vals = format_predictions(predictions, values, dataloader, dataloader.scaler)
 
