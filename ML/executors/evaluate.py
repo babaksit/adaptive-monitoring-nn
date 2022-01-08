@@ -130,7 +130,7 @@ if __name__ == '__main__':
     with open(args.config_file) as f:
         config = json.load(f)
 
-    features_list = [Feature.DETAILED_DATETIME]
+    features_list = [Feature.DETAILED_DATETIME, Feature.CYCLICAL]
     scaler = MinMaxScaler()
     dataloader = DataLoader(config['dataset_path'], config['time_column'],
                             config['val_size'], config['test_size'],
