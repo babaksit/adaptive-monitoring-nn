@@ -43,7 +43,7 @@ if __name__ == '__main__':
     dataloader = DataLoader(config['dataset_path'], config['time_column'],
                             config['val_size'], config['test_size'],
                             config['batch_size'], config['dataset_type'],
-                            features_list, scaler)
+                            features_list, 1, scaler)
 
     train_loader, val_loader, test_loader = dataloader.create_dataloaders()
     model = create_lstm(config, dataloader.get_num_class(), dataloader.get_num_features())

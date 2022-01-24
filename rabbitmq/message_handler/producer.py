@@ -43,5 +43,5 @@ class Producer:
         #     return False
         self.channel.basic_publish(exchange=self.exchange,
                                    routing_key=self.routing_key, body=msg)
-        logging.info("Sent: " + msg)
+        # logging.info("Sent: " + msg)
         return True

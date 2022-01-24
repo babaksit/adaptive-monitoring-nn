@@ -37,6 +37,29 @@ class DatasetLoader:
 
         return df
 
+    @staticmethod
+    def load_multiple_msg_df(dataset_path: str, time_col: str) -> pd.DataFrame:
+
+        """
+        Loads a dataset which can send multiple message between intervals as a pandas DataFrame
+
+        Parameters
+        ----------
+        dataset_path : str
+            path to the timeseries dataset
+
+        time_col : str
+            Time column name
+        Returns
+        -------
+
+        """
+
+        df = pd.read_csv(dataset_path)
+        df.set_index(time_col, inplace=True)
+
+        return df
+
 
 if __name__ == '__main__':
     df = DatasetLoader.load_timeseries("../data/ADDITION_1_2000_300_S.csv", "Time", True)

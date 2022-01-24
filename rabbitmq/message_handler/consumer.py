@@ -43,7 +43,8 @@ class Consumer:
         -------
 
         """
-        logging.info(" [x] Received %r" % body)
+        pass
+        # logging.info(" [x] Received %r" % body)
 
     def start(self):
         """

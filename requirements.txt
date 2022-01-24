@@ -1,9 +1,9 @@
 pandas
 matplotlib
 numpy
-sklearn
 scikit-learn
 prometheus_client
 pyzmq
 requests
-pika
+torch
+fastcore

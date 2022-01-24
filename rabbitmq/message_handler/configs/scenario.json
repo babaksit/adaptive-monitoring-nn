@@ -1,13 +1,14 @@
 {
   "name": "test",
-  "description": "First test",
+  "type": "multiple_message",
+  "description": "IoT Vehicle Count",
   "msg_size": "100 bytes",
   "num_channels" : 1,
   "num_producers" : 1,
   "num_consumers" : 1,
   "queue_name" : "test",
   "exchange" : "",
-  "dataset_path": "../../data/ADDITION_1_2020_172800_S.csv",
-  "time_column_name": "Time",
-  "value_column_name": "Value"
+  "dataset_path": "../../data/IoT_vehicleCount_7D_1S.csv",
+  "time_column_name": "second",
+  "value_column_name": "vehicleCount"
 }

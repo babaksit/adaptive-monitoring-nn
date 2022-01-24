@@ -124,15 +124,30 @@ class Scenario:
         -------
 
         """
-        df = DatasetLoader.load_timeseries(self.scenario_config['dataset_path'],
-                                           self.scenario_config['time_column_name'],
-                                           True)
-        cl = self.scenario_config['value_column_name']
-        for producer in self.producers:
-            for index, row in df.iterrows():
-                if not pd.isna(index):
-                    producer.publish_str_msg(str(row[cl]))
-                    time.sleep(float(index))
+
+        if self.scenario_config['type'] == "multiple_message":
+            df = DatasetLoader.load_multiple_msg_df(self.scenario_config['dataset_path'],
+                                                    self.scenario_config['time_column_name'])
+            cl = self.scenario_config['value_column_name']
+            next_call = time.time()
+            for producer in self.producers:
+                for index, row in df.iterrows():
+                    if not pd.isna(index):
+                        for i in range(row[cl]):
+                            producer.publish_str_msg(str(i))
+                        next_call = next_call + 1.0
+                        print(next_call - time.time())
+                        time.sleep(next_call - time.time())
+        else:
+            df = DatasetLoader.load_timeseries(self.scenario_config['dataset_path'],
+                                               self.scenario_config['time_column_name'],
+                                               True)
+            cl = self.scenario_config['value_column_name']
+            for producer in self.producers:
+                for index, row in df.iterrows():
+                    if not pd.isna(index):
+                        producer.publish_str_msg(str(row[cl]))
+                        time.sleep(float(index))
 
     def run(self) -> bool:
         """

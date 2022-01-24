@@ -35,7 +35,7 @@ Follow instruction in https://minikube.sigs.k8s.io/docs/start/
      export RABBITMQ_URL=http://$(kubectl get service/rabbitmq -o jsonpath='{.spec.clusterIP}'):15672
      helm install prometheus-rabbitmq-exporter prometheus-community/prometheus-rabbitmq-exporter -f helm/rabbitmq_exporter/values.yaml --set rabbitmq.url=$RABBITMQ_URL --set rabbitmq.user=user --set rabbitmq.password=$RABBITMQ_PASS 
 
-## 6. Check if RabbitMQ Exporter is scraping by Prometheus
+## 6. Check if RabbitMQ Exporter is being scraped by Prometheus
     
 	kubectl port-forward service/prometheus-kube-prometheus-prometheus 9090
 Open 127.0.0.1:9090 in browser and check in targets section
@@ -44,7 +44,7 @@ Open 127.0.0.1:9090 in browser and check in targets section
 
     kubectl port-forward deployment/prometheus-grafana 3000
 
-Grafna default values are as follow:
+Grafana default values are as follow:
 user: admin
 pwd: prom-operator
 

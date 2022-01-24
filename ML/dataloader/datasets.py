@@ -59,20 +59,24 @@ class MethodDataset(Dataset):
 class PrometheusDataset(Dataset):
     """
     Dataset class for prometheus
-
+    #TODO add num_workers https://pytorch.org/docs/stable/data.html#torch.utils.data.IterableDataset
     """
 
-    def __init__(self, df: pd.DataFrame, value_cols: list):
+    def __init__(self, df: pd.DataFrame, value_cols: list, window_size: int =1):
         """
 
         Parameters
         ----------
-        df : Input dataframe
-        value_cols : list of columns which are targets/values
-
+        df : pd.DataFrame
+            Input dataframe
+        value_cols : list
+            list of columns which are targets/values
+        window_size : int
+            Sliding window size
         """
         self.df = df
         self.value_cols = value_cols
+        self.window_size = window_size
 
     def __len__(self) -> int:
         """
@@ -98,7 +102,7 @@ class PrometheusDataset(Dataset):
         The time and corresponding value given by the index
         """
 
-        row = self.df.iloc[index]
+        row = self.df.iloc[index:self.window_size]
         X = torch.Tensor(row.drop(index=self.value_cols))
         y = torch.Tensor(row[self.value_cols])
 

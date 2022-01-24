@@ -16,7 +16,7 @@ from ML.features.assign import Feature
 class DataLoader:
     def __init__(self, dataset_path: str, time_col: str, val_size: float,
                  test_size: float, batch_size: int, dataset_type: str
-                 , features_list: list = None,
+                 , features_list: list = None, window_size: int = 1,
                  scaler: Union[MinMaxScaler, StandardScaler] = None):
 
         """
@@ -39,6 +39,8 @@ class DataLoader:
             type of the dataset
         features_list: list
             Features to assign to the dataframe
+        window_size: int
+            Sliding window size
         scaler: Union[MinMaxScaler, StandardScaler]
             scaler function to scale dataframe values
 
@@ -52,6 +54,7 @@ class DataLoader:
         self.test_size = test_size
         self.dataset_path = dataset_path
         self.df = None
+        self.window_size = window_size
         self.__create_df()
         self.train_loader = None
         self.val_loader = None
@@ -132,7 +135,6 @@ class DataLoader:
 
         train, val, test = self.__get_train_val_test_df()
         if self.scaler:
-
             train = pd.DataFrame(self.scaler.fit_transform(train), columns=train.columns, index=train.index)
             val = pd.DataFrame(self.scaler.fit_transform(val), columns=val.columns, index=val.index)
             test = pd.DataFrame(self.scaler.fit_transform(test), columns=test.columns, index=test.index)
@@ -142,17 +144,18 @@ class DataLoader:
             #     val[col] = self.scaler.fit_transform(val[col].values.reshape(-1, 1))
             # for col in test.columns:
             #     test[col] = self.scaler.fit_transform(test[col].values.reshape(-1, 1))
-
+        #TODO add sliding window
         if self.dataset_type == "Method":
             train_dataset = MethodDataset(train, self.val_col)
             val_dataset = MethodDataset(val, self.val_col)
             test_dataset = MethodDataset(test, self.val_col)
 
         if self.dataset_type == "Prometheus":
-            train_dataset = PrometheusDataset(train, self.val_col)
-            val_dataset = PrometheusDataset(val, self.val_col)
-            test_dataset = PrometheusDataset(test, self.val_col)
+            train_dataset = PrometheusDataset(train, self.val_col, self.window_size)
+            val_dataset = PrometheusDataset(val, self.val_col, self.window_size)
+            test_dataset = PrometheusDataset(test, self.val_col, self.window_size)
 
+        # TODO add num_workers
         self.train_loader = data.DataLoader(train_dataset, batch_size=self.batch_size,
                                             shuffle=False)
         self.val_loader = data.DataLoader(val_dataset, batch_size=self.batch_size,
