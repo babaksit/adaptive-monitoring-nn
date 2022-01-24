@@ -46,17 +46,11 @@ class Consumer:
         -------
 
         """
-        now = time.time()
-
-        if self.last_saved_time == -1:
-            self.last_saved_time = now
 
         if self.last_val != int(body):
-            diff = now - self.last_saved_time
             logging.info("Received %r" % body)
-            logging.info("Diff last time: %f" % diff)
             self.last_val = int(body)
-            self.last_saved_time = now
+
 
 
 
