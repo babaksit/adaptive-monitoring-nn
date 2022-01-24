@@ -30,6 +30,7 @@ class Consumer:
         self.exchange = exchange
         self.routing_key = routing_key
         self.last_saved_time = -1
+        self.last_val = -1
 
     def callback(self, ch, method, properties, body):
         """
@@ -46,13 +47,19 @@ class Consumer:
 
         """
         now = time.time()
-        if self.last_saved_time == -1:
-            self.last_saved_time = now - 60
-        diff = now - self.last_saved_time
 
-        if diff >= 60:
+        if self.last_saved_time == -1:
             self.last_saved_time = now
+
+        if self.last_val != int(body):
+            diff = now - self.last_saved_time
             logging.info("Received %r" % body)
+            logging.info("Diff last time: %f" % diff)
+            self.last_val = int(body)
+            self.last_saved_time = now
+
+
+
 
 
     def start(self):

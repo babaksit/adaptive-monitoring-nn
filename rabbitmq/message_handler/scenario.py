@@ -130,14 +130,14 @@ class Scenario:
             df = DatasetLoader.load_multiple_msg_df(self.scenario_config['dataset_path'],
                                                     self.scenario_config['time_column_name'])
             cl = self.scenario_config['value_column_name']
-            next_call = time.time()
+
             for producer in self.producers:
                 for index, row in df.iterrows():
+                    next_call = time.time()
                     if not pd.isna(index):
                         for i in range(row[cl]):
-                            producer.publish_str_msg(str(i))
-                        next_call = next_call + 1.0
-                        sleep_time = next_call - time.time()
+                            producer.publish_str_msg(str(row[cl]))
+                        sleep_time = next_call + 1.0 - time.time()
                         if sleep_time > 0.000000:
                             time.sleep(sleep_time)
         else:
