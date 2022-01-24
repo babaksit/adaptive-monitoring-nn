@@ -136,8 +136,9 @@ class Scenario:
                         for i in range(row[cl]):
                             producer.publish_str_msg(str(i))
                         next_call = next_call + 1.0
-                        print(next_call - time.time())
-                        time.sleep(next_call - time.time())
+                        sleep_time = next_call - time.time()
+                        if sleep_time > 0.000000:
+                            time.sleep(sleep_time)
         else:
             df = DatasetLoader.load_timeseries(self.scenario_config['dataset_path'],
                                                self.scenario_config['time_column_name'],
