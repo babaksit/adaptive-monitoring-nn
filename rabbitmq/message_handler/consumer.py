@@ -51,11 +51,6 @@ class Consumer:
             logging.info("Received %r" % body)
             self.last_val = int(body)
 
-
-
-
-
-
     def start(self):
         """
         Start consuming
