@@ -1,3 +1,4 @@
+import argparse
 import json
 import logging
 import os
@@ -190,7 +191,13 @@ class Scenario:
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    sc = Scenario("configs/scenario.json", "configs/connection.json")
+    parser = argparse.ArgumentParser(description="Train a time series network")
+    parser.add_argument('--scenario-config', type=str,
+                        help='Path to the scenario config file', default="configs/scenario.json")
+    parser.add_argument('--connection-config', type=str,
+                        help='Path to the connection config file', default="configs/connection.json")
+    args = parser.parse_args()
+    sc = Scenario(args.scenario_config, args.connection_config)
     try:
         sc.run()
     except KeyboardInterrupt:
