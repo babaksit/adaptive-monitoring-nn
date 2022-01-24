@@ -1,4 +1,6 @@
+import datetime
 import logging
+import time
 
 from connection_handler import ConnectionHandler
 from pika.adapters.blocking_connection import BlockingChannel
@@ -27,9 +29,9 @@ class Consumer:
         self.channel = channel
         self.exchange = exchange
         self.routing_key = routing_key
+        self.last_saved_time = -1
 
-    @staticmethod
-    def callback(ch, method, properties, body):
+    def callback(self, ch, method, properties, body):
         """
         Callback function to receive new messages
         Parameters
@@ -43,8 +45,15 @@ class Consumer:
         -------
 
         """
-        # pass
-        logging.info(" [x] Received %r" % body)
+        now = time.time()
+        if self.last_saved_time == -1:
+            self.last_saved_time = now - 60
+        diff = now - self.last_saved_time
+
+        if diff >= 60:
+            self.last_saved_time = now
+            logging.info("Received %r" % body)
+
 
     def start(self):
         """
