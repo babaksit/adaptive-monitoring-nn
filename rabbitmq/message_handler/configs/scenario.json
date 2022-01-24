@@ -8,7 +8,7 @@
   "num_consumers" : 1,
   "queue_name" : "test",
   "exchange" : "",
-  "dataset_path": "../../data/IoT_vehicleCount_7D_1S.csv",
+  "dataset_path": "../../data/IoT_test.csv",
   "time_column_name": "second",
   "value_column_name": "vehicleCount"
 }
