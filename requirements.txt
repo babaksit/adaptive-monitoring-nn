@@ -7,3 +7,4 @@ pyzmq
 requests
 torch
 fastcore
+pika
