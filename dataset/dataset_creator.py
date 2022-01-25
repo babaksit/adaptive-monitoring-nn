@@ -202,7 +202,7 @@ if __name__ == '__main__':
     # end_time = datetime(year=2022, month=1, day=7, hour=10, minute=30, second=00)
     # chunk_size = timedelta(seconds=1)
     #
-    DatasetCreator.create_prometheus_df(start_time_str="2022-01-24 21:10:00",
+    DatasetCreator.create_prometheus_df(start_time_str="2022-01-24T21:10:00",
                                         timedelta_hours=1,
                                         num_timedelta_hours=12,
                                         start_metric_name="rabbitmq",
