@@ -106,7 +106,7 @@ class DatasetCreator:
         prom_save_dir = start_time_str
         # final save dir
         save_dir = os.path.join(save_dir, prom_save_dir)
-        Path("save_dir").mkdir(parents=True, exist_ok=True)
+        Path(save_dir).mkdir(parents=True, exist_ok=True)
 
         # if not os.path.exists(save_dir):
         #     os.mkdir(save_dir)
