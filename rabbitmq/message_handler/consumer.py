@@ -47,9 +47,10 @@ class Consumer:
 
         """
 
-        if self.last_val != int(body):
+        now = time.time()
+        if (now - self.last_saved_time) > 60:
+            self.last_saved_time = now
             logging.info("Received %r" % body)
-            self.last_val = int(body)
 
     def start(self):
         """

@@ -137,6 +137,7 @@ class Scenario:
                     if not pd.isna(index):
                         for i in range(row[cl]):
                             producer.publish_str_msg(str(row[cl]))
+                        producer.publish_str_msg("$")
                         sleep_time = next_call + 1.0 - time.time()
                         if sleep_time > 0.000000:
                             time.sleep(sleep_time)
