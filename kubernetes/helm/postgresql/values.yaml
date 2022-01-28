@@ -1,0 +1,127 @@
+## @section Global parameters
+## Global Docker image parameters
+## Please, note that this will override the image parameters, including dependencies, configured to use the global value
+## Current available global Docker image parameters: imageRegistry, imagePullSecrets and storageClass
+##
+
+## @param global.imageRegistry Global Docker image registry
+## @param global.imagePullSecrets Global Docker registry secret names as an array
+## @param global.storageClass Global StorageClass for Persistent Volume(s)
+##
+global:
+  imageRegistry: ""
+  ## E.g.
+  ## imagePullSecrets:
+  ##   - myRegistryKeySecretName
+  ##
+  imagePullSecrets: []
+  storageClass: ""
+  ## @param global.postgresql.postgresqlDatabase PostgreSQL database (overrides `postgresqlDatabase`)
+  ## @param global.postgresql.postgresqlUsername PostgreSQL username (overrides `postgresqlUsername`)
+  ## @param global.postgresql.existingSecret Name of existing secret to use for PostgreSQL passwords (overrides `existingSecret`)
+  ## @param global.postgresql.postgresqlPassword PostgreSQL admin password (overrides `postgresqlPassword`)
+  ## @param global.postgresql.servicePort PostgreSQL port (overrides `service.port`
+  ## @param global.postgresql.replicationPassword Replication user password (overrides `replication.password`)
+  ##
+  postgresql:
+    postgresqlDatabase: test
+    postgresqlUsername: postgres
+    existingSecret: ""
+    postgresqlPassword: postgres
+    servicePort: ""
+    replicationPassword: postgres
+
+
+## @param postgresqlPostgresPassword PostgreSQL admin password (used when `postgresqlUsername` is not `postgres`, in which case`postgres` is the admin username)
+## ref: https://github.com/bitnami/bitnami-docker-postgresql/blob/master/README.md#creating-a-database-user-on-first-run (see note!)
+##
+postgresqlPostgresPassword: postgres
+## @param postgresqlUsername PostgreSQL user (has superuser privileges if username is `postgres`)
+## ref: https://github.com/bitnami/bitnami-docker-postgresql/blob/master/README.md#setting-the-root-password-on-first-run
+##
+postgresqlUsername: postgres
+## @param postgresqlPassword PostgreSQL user password
+## ref: https://github.com/bitnami/bitnami-docker-postgresql/blob/master/README.md#setting-the-root-password-on-first-run
+##
+postgresqlPassword: postgres
+## @param existingSecret Name of existing secret to use for PostgreSQL passwords
+## The secret has to contain the keys postgresql-password which is the password for postgresqlUsername when it is
+## different of postgres, postgresql-postgres-password which will override postgresqlPassword,
+## postgresql-replication-password which will override replication.password and postgresql-ldap-password which will be
+## used to authenticate on LDAP. The value is evaluated as a template.
+## e.g:
+## existingSecret: secret
+##
+existingSecret: ""
+## @param usePasswordFile Mount PostgreSQL secret as a file instead of passing environment variable
+##
+usePasswordFile: false
+
+
+volumePermissions:
+  ## @param volumePermissions.enabled Enable init container that changes volume permissions in the data directory (for cases where the default k8s `runAsUser` and `fsUser` values do not work)
+  ##
+  enabled: true
+
+ 
+## Configure metrics exporter
+##
+metrics:
+  ## @param metrics.enabled Start a prometheus exporter
+  ##
+  enabled: true
+  ## @param metrics.resources Prometheus exporter container resources
+  ##
+  resources: {}
+  ## @param metrics.service.type Kubernetes Service type
+  ## @param metrics.service.annotations [object] Additional annotations for metrics exporter pod
+  ## @param metrics.service.loadBalancerIP loadBalancerIP if redis metrics service type is `LoadBalancer`
+  ##
+  service:
+    type: ClusterIP
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9187"
+    loadBalancerIP: ""
+  ## @param metrics.serviceMonitor.enabled Set this to `true` to create ServiceMonitor for Prometheus operator
+  ## @param metrics.serviceMonitor.additionalLabels Additional labels that can be used so ServiceMonitor will be discovered by Prometheus
+  ## @param metrics.serviceMonitor.namespace Optional namespace in which to create ServiceMonitor
+  ## @param metrics.serviceMonitor.interval Scrape interval. If not set, the Prometheus default scrape interval is used
+  ## @param metrics.serviceMonitor.scrapeTimeout Scrape timeout. If not set, the Prometheus default scrape timeout is used
+  ## @param metrics.serviceMonitor.relabelings RelabelConfigs to apply to samples before scraping
+  ## @param metrics.serviceMonitor.metricRelabelings MetricRelabelConfigs to apply to samples before ingestion
+  ##
+  serviceMonitor:
+    enabled: true
+    additionalLabels: 
+      release: prometheus
+    namespace: ""
+    interval: "1s"
+    scrapeTimeout: ""
+    relabelings: []
+    metricRelabelings: []
+
+ 
+  ## @param metrics.customMetrics Define additional custom metrics
+  ## ref: https://github.com/wrouesnel/postgres_exporter#adding-new-metrics-via-a-config-file
+  ## customMetrics:
+  ##   pg_database:
+  ##     query: "SELECT d.datname AS name, CASE WHEN pg_catalog.has_database_privilege(d.datname, 'CONNECT') THEN pg_catalog.pg_database_size(d.datname) ELSE 0 END AS size_bytes FROM pg_catalog.pg_database d where datname not in ('template0', 'template1', 'postgres')"
+  ##     metrics:
+  ##       - name:
+  ##           usage: "LABEL"
+  ##           description: "Name of the database"
+  ##       - size_bytes:
+  ##           usage: "GAUGE"
+  ##           description: "Size of the database in bytes"
+  ##
+  customMetrics: {}
+  ## @param metrics.extraEnvVars Extra environment variables to add to postgres-exporter
+  ## see: https://github.com/wrouesnel/postgres_exporter#environment-variables
+  ## For example:
+  ##  extraEnvVars:
+  ##  - name: PG_EXPORTER_DISABLE_DEFAULT_METRICS
+  ##    value: "true"
+  ##
+  extraEnvVars: []
+  
