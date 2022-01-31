@@ -219,4 +219,4 @@ if __name__ == '__main__':
     #                                     start_metric_name="rabbitmq",
     #                                     save_dir="../data/prometheus")
 
-    DatasetCreator.merge_rabbitmq_prometheus_dfs("../data/prometheus/2022-01-31T15:00:00Z")
+    DatasetCreator.merge_rabbitmq_prometheus_dfs("data/prometheus/2022-01-31T15:00:00Z")
