@@ -182,8 +182,13 @@ class DatasetCreator:
                 df_merge_list.append(metric_df)
             else:
                 logging.error("Metric dataframe could not be parsed and merged for metric name: " + metric_name)
-        try:
 
+        for i in range(len(df_merge_list) - 1):
+            if not (df_merge_list[i].index.equals(df_merge_list[i + 1].index)):
+                logging.error("These two dataframes have different index:"
+                              + df_merge_list[i].columns[0] + " , " + df_merge_list[i + 1].columns[0])
+
+        try:
             result = pd.concat(df_merge_list, axis=1)
             result.index.name = "Time"
             if drop_constant_cols:
@@ -202,15 +207,16 @@ if __name__ == '__main__':
     # end_time = datetime(year=2022, month=1, day=7, hour=10, minute=30, second=00)
     # chunk_size = timedelta(seconds=1)
     #
-    # DatasetCreator.create_prometheus_df(start_time_str="2022-01-24T21:10:00Z",
-    #                                     timedelta_hours=1,
-    #                                     num_timedelta_hours=12,
-    #                                     start_metric_name="rabbitmq",
-    #                                     save_dir="data/prometheus",
-    #                                     step="1s")
+
+    DatasetCreator.create_prometheus_df(start_time_str="2022-01-31T15:00:00Z",
+                                        timedelta_hours=1,
+                                        num_timedelta_hours=93,
+                                        start_metric_name="rabbitmq",
+                                        save_dir="data/prometheus",
+                                        step="1s")
     # DatasetCreator.create_prometheus_df(start_time=start_time, end_time=end_time,
     #
     #                                     start_metric_name="rabbitmq",
     #                                     save_dir="../data/prometheus")
 
-    DatasetCreator.merge_rabbitmq_prometheus_dfs("data/prometheus/2022-01-24T21:10:00Z")
+    DatasetCreator.merge_rabbitmq_prometheus_dfs("../data/prometheus/2022-01-31T15:00:00Z")
