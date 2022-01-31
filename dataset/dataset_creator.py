@@ -208,7 +208,7 @@ if __name__ == '__main__':
     # chunk_size = timedelta(seconds=1)
     #
 
-    DatasetCreator.create_prometheus_df(start_time_str="2022-01-31T15:00:00Z",
+    DatasetCreator.create_prometheus_df(start_time_str="2022-01-27T15:00:00Z",
                                         timedelta_hours=1,
                                         num_timedelta_hours=93,
                                         start_metric_name="rabbitmq",
@@ -219,4 +219,4 @@ if __name__ == '__main__':
     #                                     start_metric_name="rabbitmq",
     #                                     save_dir="../data/prometheus")
 
-    DatasetCreator.merge_rabbitmq_prometheus_dfs("data/prometheus/2022-01-31T15:00:00Z")
+    DatasetCreator.merge_rabbitmq_prometheus_dfs("data/prometheus/2022-01-27T15:00:00Z")
