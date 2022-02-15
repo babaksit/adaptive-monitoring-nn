@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workload-deployment
+  labels:
+    app: workload-simulator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: workload-simulator
+  template:
+    metadata:
+      labels:
+        app: workload-simulator
+    spec:
+      containers:
+      - name: workload-simulator
+        image: babaksit/workload_simulator:v0.0.1
+        args: ["--cpu-scale", "10", "--memory-scale", "100000"]
+      nodeSelector:
+        kubernetes.io/hostname: minikube-m02
