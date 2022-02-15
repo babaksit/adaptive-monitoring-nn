@@ -9,6 +9,17 @@ image:
   debug: false
 
 
+auth:
+  ## @param auth.username &reg;abbitMQ application username
+  ## ref: https://github.com/bitnami/bitnami-docker-rabbitmq#environment-variables
+  ##
+  username: "test"
+
+  ## @param auth.password &reg;abbitMQ application password
+  ## ref: https://github.com/bitnami/bitnami-docker-rabbitmq#environment-variables
+  ##
+  password: "test"
+
 ## @param nodeSelector Node labels for pod assignment. Evaluated as a template
 ## ref: https://kubernetes.io/docs/user-guide/node-selection/
 ##

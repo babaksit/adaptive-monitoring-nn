@@ -2,7 +2,7 @@ import logging
 from rabbitmq.message_handler.connection_handler import ConnectionHandler
 
 
-class Producer:
+class Publisher:
     """
     Producer class to publish messages
 
@@ -41,6 +41,7 @@ class Producer:
         # if not self.channel.is_open():
         #     logging.error("channel is not open to publish the message")
         #     return False
+
         self.channel.basic_publish(exchange=self.exchange,
                                    routing_key=self.routing_key, body=msg)
         # logging.info("Sent: " + msg)

@@ -6,14 +6,14 @@ from rabbitmq.message_handler.connection_handler import ConnectionHandler
 from pika.adapters.blocking_connection import BlockingChannel
 
 
-class Consumer:
+class Subscriber:
     """
-    Producer class to publish messages
+    Subscriber class to subscribe messages
 
     """
 
     def __init__(self, connection_handler: ConnectionHandler, channel: BlockingChannel,
-                 exchange: str, routing_key: str):
+                 exchange: str, queue_name: str):
         """
         Initialize
 
@@ -22,13 +22,13 @@ class Consumer:
         connection_handler : handle connection to RabbitMQ server
         channel :  A BlockingChannel which msgs will be published on
         exchange: Exchange name
-        routing_key: Routing Key which could be the queue name declared in @declare_queue function
+        queue_name: Queue name which could be the queue name declared in @declare_queue function
 
         """
         self.connection_handler = connection_handler
         self.channel = channel
         self.exchange = exchange
-        self.routing_key = routing_key
+        self.queue_name = queue_name
         self.last_saved_time = -1
         self.last_val = -1
 
@@ -47,21 +47,23 @@ class Consumer:
 
         """
 
+        # logging.info("Received %r %s", body, self.queue_name)
+        # logging.info(str(ch))
+
         now = time.time()
-        # logging.info("Received %r" % body)
-        if (now - self.last_saved_time) >= 1:
+        if (now - self.last_saved_time) > 10:
             self.last_saved_time = now
             logging.info("Received %r" % body)
 
     def start(self):
         """
-        Start consuming
+        Start subscribing
 
         Returns
         -------
 
         """
-        self.channel.basic_consume(queue=self.routing_key, on_message_callback=self.callback,
+        self.channel.basic_consume(queue=self.queue_name, on_message_callback=self.callback,
                                    auto_ack=True)
         self.channel.start_consuming()
 
