@@ -5,7 +5,7 @@
 Follow instruction in https://minikube.sigs.k8s.io/docs/start/
 <br />Start minikube with calico plugin
     
-    minikube start --nodes 2 --network-plugin=cni
+    minikube start --nodes 2 --network-plugin=cni --memory 2048 --cpus 2
 
 ## 2. Install prometheus chart
 
@@ -51,7 +51,7 @@ pwd: prom-operator
 
 ## 8. Limit minikube second node bandwidth which contains rabbitmq pod
 
-    minikube ssh -n minikube-m02
+    minikube ssh -n minikube-m02 
     sudo apt-get update
     sudo apt-get install git -y
     sudo ip link add name ifb0 type ifb
