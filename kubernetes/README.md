@@ -77,3 +77,7 @@ An example for json config file could be as follow:
                      'producer-rate-limit': 2500,
                      'min-msg-size' : 100
                       }]}]
+
+## 10. Run Workload Simulator
+    
+    helm install  workload-sim helm/workload_sim/. --set rabbitmqHost=$(kubectl get service/rabbitmq -o jsonpath='{.spec.clusterIP}')
