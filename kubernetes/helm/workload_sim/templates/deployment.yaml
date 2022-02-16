@@ -1,3 +1,4 @@
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -19,8 +20,9 @@ spec:
         image: babaksit/workload_simulator:v0.0.1
         env:
           - name: RABBITMQ_HOST
-            value: "127.0.0.1"
-        args: ["--cpu-scale", "3", "--memory-scale", "100000", "--rabbitmq-host",
-        "$(RABBITMQ_HOST)"]
+            value: 
+        args: ["--cpu-scale", "{{ .Values.cpuScale }}",
+               "--memory-scale", "{{ .Values.memoryScale }}", 
+               "--rabbitmq-host", "{{ .Values.rabbitmqHost }}"]
       nodeSelector:
         kubernetes.io/hostname: minikube-m02
