@@ -11,7 +11,7 @@ import pika
 
 class Subscriber:
 
-    def __init__(self, cpu_scale, memory_scale):
+    def __init__(self, cpu_scale, memory_scale, file_path):
         self.last_saved_time = -1
         self.stop_thread = False
         self.new_data = False
@@ -19,7 +19,7 @@ class Subscriber:
         self.temp_mem = []
         self.cpu_scale = cpu_scale
         self.memory_scale = memory_scale
-        self.file_name = 'test.txt'
+        self.file_name = file_path
         fle = Path(self.file_name)
         fle.touch(exist_ok=True)
 
@@ -50,13 +50,11 @@ class Subscriber:
             tmp_str = "Adaptive Monitoring NN"
             self.temp_mem = [tmp_str] * self.data * self.memory_scale
             for _ in range(self.data * self.cpu_scale):
-
-                    f.write(tmp_str)
-                    f.flush()
-                    f.seek(0)
-                    a = f.read()
-                    f.truncate(0)
-
+                f.write(tmp_str)
+                f.flush()
+                f.seek(0)
+                a = f.read()
+                f.truncate(0)
             f.close()
             sleep_time = now + 1.0 - time.time()
         except Exception as e:
@@ -65,7 +63,8 @@ class Subscriber:
         if sleep_time > 0.000000:
             time.sleep(sleep_time)
         else:
-            err_msg = "sleep time less than zero : " + str(sleep_time)
+            err_msg = "sleep time less than zero : " + str(sleep_time) \
+                      + " for data: " + str(self.data)
             logging.warning(err_msg)
 
     def workload_simulator(self):
@@ -95,6 +94,8 @@ def main():
                         help='Workload Scale', default=10)
     parser.add_argument('--memory-scale', type=int,
                         help='Workload Scale', default=100000)
+    parser.add_argument('--file-path', type=str,
+                        help='Where to read and write file', default=".")
 
     args = parser.parse_args()
 
@@ -124,7 +125,7 @@ def main():
 
     print(' [*] Waiting for logs. To exit press CTRL+C')
 
-    sub = Subscriber(args.cpu_scale, args.memory_scale)
+    sub = Subscriber(args.cpu_scale, args.memory_scale, args.file_path)
 
     thread = threading.Thread(target=sub.workload_simulator)
     thread.start()
