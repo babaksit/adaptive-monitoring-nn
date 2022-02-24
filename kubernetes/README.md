@@ -37,7 +37,7 @@ Follow instruction in https://minikube.sigs.k8s.io/docs/start/
 
 ## 6. Check if RabbitMQ Exporter is being scraped by Prometheus
     
-	kubectl port-forward service/prometheus-kube-prometheus-prometheus 9090
+    kubectl port-forward service/prometheus-kube-prometheus-prometheus 9090
 Open 127.0.0.1:9090 in browser and check in targets section
 
 ## 7. Grafana
@@ -81,3 +81,8 @@ An example for json config file could be as follow:
 ## 10. Run Workload Simulator
     
     helm install  workload-sim helm/workload_sim/. --set rabbitmqHost=$(kubectl get service/rabbitmq -o jsonpath='{.spec.clusterIP}')
+
+## 11. AirFlow
+
+    helm repo add apache-airflow https://airflow.apache.org
+    helm upgrade --install airflow apache-airflow/airflow --namespace airflow --create-namespace -f helm/airflow/values.yaml 
