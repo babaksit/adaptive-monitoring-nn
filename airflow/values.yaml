@@ -1,0 +1,8 @@
+nodeSelector:
+  kubernetes.io/hostname: minikube
+
+# webserverSecretKey: 863df436bf3784c678e9ca21abf0c6b7
+postgresql:
+  volumePermissions:
+    enabled: true
+
