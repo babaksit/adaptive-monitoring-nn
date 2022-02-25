@@ -5,16 +5,18 @@ nodeSelector:
 postgresql:
   volumePermissions:
     enabled: true
-  nodeSelector:
-    kubernetes.io/hostname: minikube
+  primary:
+    nodeSelector:
+      kubernetes.io/hostname: minikube
+
 
 # Git sync
 dags:
-  persistence:
-    # Enable persistent volume for storing dags
-    enabled: true
-    # Volume size for dags
-    size: 1Gi
+#  persistence:
+#    # Enable persistent volume for storing dags
+#    enabled: true
+#    # Volume size for dags
+#    size: 1Gi
 
   gitSync:
     enabled: true
@@ -23,7 +25,7 @@ dags:
     # ssh examples ssh://git@github.com/apache/airflow.git
     # git@github.com:apache/airflow.git
     # https example: https://github.com/apache/airflow.git
-    repo: git@github.com:babaksit/adaptive-monitoring-nn.git
+    repo: ssh://git@github.com/babaksit/adaptive-monitoring-nn.git
     branch: main
     rev: HEAD
     depth: 1
@@ -32,6 +34,9 @@ dags:
     # subpath within the repo where dags are located
     # should be "" if dags are at repo root
     subPath: "pipeline/dags"
+    wait: 60
+    containerName: git-sync
+    uid: 65533
 
     sshKeySecret: airflow-ssh-git-secret
 logs:
@@ -40,3 +45,15 @@ logs:
     enabled: true
     # Volume size for logs
     size: 1Gi
+workers:
+  persistence:
+    # Enable persistent volumes
+    enabled: true
+    # Volume size for worker StatefulSet
+    size: 5Gi
+    # If using a custom storageClass, pass name ref to all statefulSets here
+    storageClassName:
+    # Execute init container to chown log directory.
+    # This is currently only needed in kind, due to usage
+    # of local-path provisioner.
+    fixPermissions: true
