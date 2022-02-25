@@ -1,15 +1,14 @@
 import glob
+import logging
 import os
+from datetime import timedelta, datetime
+from enum import Enum
 from pathlib import Path
 
-import pandas as pd
-from enum import Enum
-from prometheus_api_client import PrometheusConnect, MetricsList, Metric, MetricSnapshotDataFrame, MetricRangeDataFrame
-from prometheus_api_client.utils import parse_datetime
-from datetime import timedelta, datetime
-import logging
-from prometheus_pandas import query
 import dateutil.rrule as rrule
+import pandas as pd
+from prometheus_api_client import PrometheusConnect
+from prometheus_pandas import query
 
 
 class CreationMethod(Enum):
@@ -30,6 +29,7 @@ class DatasetCreator:
 
     def __init__(self):
         self.date_format_str = '%Y-%m-%dT%H:%M:%SZ'
+        self.merged_csv = None
 
     def chunk_datetime(self, start_time_str: str, end_time_str: str, interval: int = 3):
         """
@@ -159,13 +159,13 @@ class DatasetCreator:
             result.index.name = "Time"
             if drop_constant_cols:
                 result = result.loc[:, (result != result.iloc[0]).any()]
-            result.to_csv(os.path.join(dir_path, "PROMETHEUS_merged.csv"))
+            result.to_csv(os.path.join(dir_path, "merged.csv"))
+            self.merged_csv = result
         except Exception as e:
             logging.error("could not concat dataframes: " + str(e))
 
 
 if __name__ == '__main__':
-
     logging.basicConfig(filename='dataset_creator.log', level=logging.DEBUG)
     dc = DatasetCreator()
     dc.create_prometheus_df(start_time_str="2022-02-18T11:30:00Z",
