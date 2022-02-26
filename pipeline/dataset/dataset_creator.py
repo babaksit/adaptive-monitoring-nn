@@ -2,7 +2,6 @@ import glob
 import logging
 import os
 from datetime import timedelta, datetime
-from enum import Enum
 from pathlib import Path
 
 import dateutil.rrule as rrule
@@ -11,19 +10,9 @@ from prometheus_api_client import PrometheusConnect
 from prometheus_pandas import query
 
 
-class CreationMethod(Enum):
-    """
-    Enum for different methods of creating dataset
-
-    """
-    # __init__ = 'value __doc__'
-    ADDITION_1 = 1, 'Each new data value is last data value plus 1'
-    PROMETHEUS = 2, "Data from prometheus queries"
-
-
 class DatasetCreator:
     """
-    Create a pandas dataframe based the given method.
+    Create a pandas dataframe by fetching from prometheus
 
     """
 
@@ -31,28 +20,18 @@ class DatasetCreator:
         self.date_format_str = '%Y-%m-%dT%H:%M:%SZ'
         self.merged_csv = None
 
-
-
-    @staticmethod
-    def remove_constant_cols(df: pd.DataFrame):
-        """
-        Remove columns which are constant
-
-        Parameters
-        ----------
-        df : pd.DataFrame
-            Input DataFrame
-        """
-        return df.loc[:, (df != df.iloc[0]).any()]
-
     def chunk_datetime(self, start_time_str: str, end_time_str: str, interval: int = 3):
         """
         Chunk given period into intervals
 
         Parameters
         ----------
-        start_time_str :
-        end_time_str :
+        start_time_str : str
+            start time in '%Y-%m-%dT%H:%M:%SZ' format
+        end_time_str : str
+            end time in '%Y-%m-%dT%H:%M:%SZ' format
+        interval : int
+            interval in hours
 
         Returns
         -------
