@@ -28,8 +28,8 @@ class DatasetLoader:
         self.resample_freq = resample_freq
         self.load_df(df_path)
         self.remove_constant_cols()
-        self.create_rate_cols(convert_cols_to_rate)
         self.create_darts_df()
+        self.create_rate_cols(convert_cols_to_rate)
         self.scale_darts_series()
         if augment:
             self.series_scaled = self.augment_series()
@@ -41,9 +41,11 @@ class DatasetLoader:
         self.df = self.df.loc[:, (self.df != self.df.iloc[0]).any()]
 
     def create_rate_cols(self, cols):
-        self.df[cols] = self.df[cols].shift(-2) - self.df[cols]
+        if not cols:
+            return
+        self.darts_df[cols] = self.darts_df[cols].shift(-2) - self.darts_df[cols]
         # Fill NaNs with preceding values
-        self.df[cols] = self.df[cols].fillna(method='ffill')
+        self.darts_df[cols] = self.darts_df[cols].fillna(method='ffill')
 
     def create_darts_df(self):
         """
