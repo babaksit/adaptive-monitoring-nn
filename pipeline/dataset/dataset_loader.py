@@ -14,7 +14,7 @@ class DatasetLoader:
     """
 
     def __init__(self, df_path: str, time_col: str,
-                 target_cols, resample_freq='1Min',
+                 target_cols, convert_cols_to_rate: list, resample_freq='1Min',
                  augment=False):
 
         self.df = None
@@ -23,10 +23,12 @@ class DatasetLoader:
         self.augmented_series = None
         self.scaler = None
         self.time_col = time_col
+        self.convert_cols_to_rate = convert_cols_to_rate
         self.target_cols = target_cols
         self.resample_freq = resample_freq
         self.load_df(df_path)
         self.remove_constant_cols()
+        self.create_rate_cols(convert_cols_to_rate)
         self.create_darts_df()
         self.scale_darts_series()
         if augment:
@@ -38,21 +40,15 @@ class DatasetLoader:
     def remove_constant_cols(self):
         self.df = self.df.loc[:, (self.df != self.df.iloc[0]).any()]
 
-    def rate_col(self, col):
-        self.df[col] = self.df[col].shift(-2) - self.df[col]
+    def create_rate_cols(self, cols):
+        self.df[cols] = self.df[cols].shift(-2) - self.df[cols]
         # Fill NaNs with preceding values
-        self.df[col] = self.df[col].fillna(method='ffill')
+        self.df[cols] = self.df[cols].fillna(method='ffill')
 
     def create_darts_df(self):
         """
         Create Pandas DataFrame for the darts library
 
-        Parameters
-        ----------
-        df : pd.DataFrame
-            input DataFrame
-        target_cols : list
-            target columns
         Returns
         -------
 
