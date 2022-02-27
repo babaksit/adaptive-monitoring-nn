@@ -26,6 +26,7 @@ class DatasetLoader:
         self.target_cols = target_cols
         self.resample_freq = resample_freq
         self.load_df(df_path)
+        self.remove_constant_cols()
         self.create_darts_df()
         self.scale_darts_series()
         if augment:
@@ -33,6 +34,14 @@ class DatasetLoader:
 
     def load_df(self, df_path: str):
         self.df = pd.read_csv(df_path)
+
+    def remove_constant_cols(self):
+        self.df = self.df.loc[:, (self.df != self.df.iloc[0]).any()]
+
+    def rate_col(self, col):
+        self.df[col] = self.df[col].shift(-2) - self.df[col]
+        # Fill NaNs with preceding values
+        self.df[col] = self.df[col].fillna(method='ffill')
 
     def create_darts_df(self):
         """
@@ -100,7 +109,8 @@ class DatasetLoader:
 
         self.augmented_series = np.array(self.augmented_series).T
 
-        index = pd.date_range(start=self.df[self.time_col].iloc[0], freq=self.resample_freq, periods=self.augmented_series.shape[0])
+        index = pd.date_range(start=self.df[self.time_col].iloc[0], freq=self.resample_freq,
+                              periods=self.augmented_series.shape[0])
         self.augmented_series = pd.DataFrame(data=self.augmented_series, columns=self.target_cols, index=index)
         self.augmented_series[self.time_col] = index
         self.augmented_series = TimeSeries.from_dataframe(self.augmented_series, self.time_col, self.target_cols)
@@ -125,4 +135,3 @@ class DatasetLoader:
         val, test = val.split_before(val_test_ratio)
 
         return train, val, test
-
