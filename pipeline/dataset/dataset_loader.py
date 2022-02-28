@@ -14,7 +14,7 @@ class DatasetLoader:
     """
 
     def __init__(self, df_path: str, time_col: str,
-                 target_cols, convert_cols_to_rate: list, resample_freq='1Min',
+                 target_cols, convert_cols_to_rate: list = None, resample_freq='1Min',
                  augment=False):
 
         self.df = None
