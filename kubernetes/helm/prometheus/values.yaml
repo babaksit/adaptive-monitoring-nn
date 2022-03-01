@@ -128,3 +128,4 @@ prometheus:
   prometheusSpec:
     nodeSelector: 
       kubernetes.io/hostname: minikube
+    retention: 90d
