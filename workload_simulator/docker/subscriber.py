@@ -1,6 +1,7 @@
 import argparse
 import logging
-import signal
+import mmap
+import os
 import sys
 import threading
 import time
@@ -22,6 +23,16 @@ class Subscriber:
         self.file_name = file_path
         fle = Path(self.file_name)
         fle.touch(exist_ok=True)
+        self.tmp_mmap = None
+        self.init_mmap()
+
+    def init_mmap(self):
+        self.tmp_mmap = mmap.mmap(-1, 1024 * 10)
+        s = 'b' * 1024 * 10
+        self.tmp_mmap.write(s.encode())
+        f = os.open(self.file_name, os.O_CREAT | os.O_DIRECT | os.O_TRUNC | os.O_RDWR)
+        os.write(f, self.tmp_mmap)
+        os.close(f)
 
     def log_alive(self):
         now = time.time()
@@ -45,17 +56,16 @@ class Subscriber:
     def dummy_func(self):
         now = time.time()
         try:
-            f = open(self.file_name, "r+")
-            f.truncate(0)
-            tmp_str = "Adaptive Monitoring NN"
+            tmp_str = "Adaptive Monitoring NN, Testing Memory "
             self.temp_mem = [tmp_str] * self.data * self.memory_scale
             for _ in range(self.data * self.cpu_scale):
-                f.write(tmp_str)
-                f.flush()
-                f.seek(0)
-                a = f.read()
-                f.truncate(0)
-            f.close()
+                f = os.open(self.file_name, os.O_DIRECT | os.O_RDWR)
+                f = os.fdopen(f, 'rb+')
+                f.readinto(self.tmp_mmap)
+                f.close()
+                f = os.open(self.file_name, os.O_CREAT | os.O_DIRECT | os.O_TRUNC | os.O_RDWR)
+                os.write(f, self.tmp_mmap)
+                os.close(f)
             sleep_time = now + 1.0 - time.time()
         except Exception as e:
             logging.error(str(e))
