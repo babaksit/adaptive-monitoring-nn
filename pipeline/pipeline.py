@@ -1,7 +1,10 @@
 import logging
 
+from darts import TimeSeries
+
 from pipeline.dataset.dataset_loader import DatasetLoader
 from pipeline.models.forecast_models import TFTModel, NBeatsModel, ForecastModel
+import pandas as pd
 
 
 class Pipeline:
@@ -43,6 +46,7 @@ class Pipeline:
         self.model_dict = {"TFT": TFTModel(), "NBeats": NBeatsModel()}
         self.create_forecast_model(model_name)
         self.predict_length = predict_length
+        self.predict_frequency = frequency
         self.stop_pipeline = False
 
     def create_forecast_model(self, model_name) -> bool:
@@ -69,13 +73,20 @@ class Pipeline:
         return True
 
     def train(self):
-        train, test, val = self.dataset_loader.get_train_test_val()
+        train, test, val = self.dataset_loader.get_train_val_test()
         self.forecast_model.fit(train, val)
 
-    def get_series_to_predict(self):
+    def get_series_to_predict(self, start_time, length=None, freq=None):
+        if not length:
+            length = self.predict_length
+        if not freq:
+            freq = self.predict_frequency
+
+        rng = pd.date_range(start_time, periods=length, freq=freq)
+        df = pd.DataFrame({'Val': 0}, index=rng)
+        return TimeSeries.from_dataframe(df)
         # series = TimeSeries()
         # return series
-        pass
 
     def predict(self, start_time):
         # series = TimeSeries()
@@ -96,7 +107,7 @@ class Pipeline:
 
     def run(self):
         start_time = self.get_start_time()
-        series = self.get_series_to_predict()
+        series = self.get_series_to_predict(start_time)
         while not self.stop_pipeline:
             prediction = self.predict(series, start_time)
             if self.is_high_confidence(prediction):

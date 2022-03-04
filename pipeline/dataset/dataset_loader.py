@@ -127,7 +127,7 @@ class DatasetLoader:
         plt.title(title)
         plt.show()
 
-    def get_train_test_val(self, train_size=0.8, val_test_ratio=0.5):
+    def get_train_val_test(self, train_size=0.8, val_test_ratio=0.5):
 
         train, val = self.series_scaled.split_before(train_size)
         val, test = val.split_before(val_test_ratio)
