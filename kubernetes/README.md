@@ -13,10 +13,6 @@ Follow instruction in https://minikube.sigs.k8s.io/docs/start/
     helm repo add stable https://charts.helm.sh/stable
     helm repo update
     helm install prometheus prometheus-community/kube-prometheus-stack -f helm/prometheus/values.yaml
-
-    # For enabling or disabling node exporter or other components of the kube-prometheus-stack you can use the 
-    # helm/prometheus/values.yaml and upgrade helm chart with the following command
-    
    
 
 ## 3. Install rabbitmq chart

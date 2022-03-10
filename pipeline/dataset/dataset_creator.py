@@ -9,6 +9,8 @@ import pandas as pd
 from prometheus_api_client import PrometheusConnect
 from prometheus_pandas import query
 import time
+from pipeline.prometheus.handler import PrometheusHandler
+import json
 
 
 class DatasetCreator:
@@ -20,6 +22,8 @@ class DatasetCreator:
     def __init__(self):
         self.date_format_str = '%Y-%m-%dT%H:%M:%SZ'
         self.merged_csv = None
+        self.config = None
+        self.prometheus_handler = None
         self.node_exporter_ignore_list = ['node_arp_entries', 'node_boot_time_seconds', 'node_cooling_device_cur_state',
                                           'node_cooling_device_max_state', 'node_cpu_frequency_max_hertz',
                                           'node_cpu_frequency_min_hertz', 'node_cpu_guest_seconds_total',
@@ -133,44 +137,6 @@ class DatasetCreator:
                                        "node_timex_pps_jitter_total", "node_timex_pps_stability_exceeded_total",
                                        "process_cpu_seconds_total", "promhttp_metric_handler_errors_total",
                                        "promhttp_metric_handler_requests_total"]
-
-    def chunk_datetime(self, start_time_str: str, end_time_str: str, interval: int = 3):
-        """
-        Chunk given period into intervals
-
-        Parameters
-        ----------
-        start_time_str : str
-            start time in '%Y-%m-%dT%H:%M:%SZ' format
-        end_time_str : str
-            end time in '%Y-%m-%dT%H:%M:%SZ' format
-        interval : int
-            interval in hours
-
-        Returns
-        -------
-
-        """
-
-        def hours_aligned(start, end, interval, inc=True):
-            if inc: yield start
-            rule = rrule.rrule(rrule.HOURLY, interval=interval, byminute=0, bysecond=0, dtstart=start)
-            for x in rule.between(start, end, inc=inc):
-                yield x
-            if inc: yield end
-
-        start_time = datetime.strptime(start_time_str, self.date_format_str)
-        end_time = datetime.strptime(end_time_str, self.date_format_str)
-        time_list = list(hours_aligned(start_time, end_time, interval))
-
-        result = []
-        for i in range(len(time_list) - 1):
-            if i == 0:
-                result.append([time_list[i], time_list[i + 1]])
-                continue
-            result.append([time_list[i] + timedelta(seconds=1), time_list[i + 1]])
-
-        return result
 
     def create_prometheus_df(self, start_time_str: str,
                              end_time_str: str,
@@ -291,6 +257,73 @@ class DatasetCreator:
         except Exception as e:
             logging.error("could not concat dataframes: " + str(e))
 
+    def merge_prometheus_queries_df(self, dir_path: str):
+        """
+        Merge  prometheus queries dataframes
+
+        Parameters
+        ----------
+        dir_path : str
+            directory path where prometheus csv files locate
+
+        Returns
+        -------
+        pd.DataFrame
+            merged dataframe
+        """
+        csv_files = glob.glob(dir_path + "/*.csv")
+
+        df_merge_list = []
+
+        for csv in csv_files:
+            metric_df = pd.read_csv(csv, index_col=0)
+            df_merge_list.append(metric_df)
+
+        for i in range(len(df_merge_list) - 1):
+            if not (df_merge_list[i].index.equals(df_merge_list[i + 1].index)):
+                logging.error("These two dataframes have different index:"
+                              + df_merge_list[i].columns[0] + " , " + df_merge_list[i + 1].columns[0])
+
+        try:
+            result = pd.concat(df_merge_list, axis=1)
+            result.index.name = "Time"
+            result.to_csv(os.path.join(dir_path, "merged.csv"))
+            self.merged_csv = result
+
+        except Exception as e:
+            logging.error("could not concat dataframes: " + str(e))
+
+    def create_prometheus_queries_df(self, config_path: str, save: bool = True) -> pd.DataFrame:
+
+        with open(config_path) as f:
+            self.config = json.load(f)
+
+        start_time_str = self.config["start_time"]
+        end_time_str = self.config["end_time"]
+        save_dir = self.config["save_dir"]
+        step = self.config["step"]
+        prometheus_url = self.config["prometheus_url"]
+        queries = [query['query'] for query in self.config["queries"]]
+        columns = [query['column_name'] for query in self.config["queries"]]
+
+        if len(columns) != len(queries):
+            raise ValueError("column names should have same size az queries, check config json!")
+            return None
+
+        self.prometheus_handler = PrometheusHandler(prometheus_url)
+
+        # prometheus unique save dir
+        save_time = str(time.ctime()) + ".csv"
+        Path(save_dir).mkdir(parents=True, exist_ok=True)
+        # final save dir
+        save_path = os.path.join(save_dir, save_time)
+
+        df = self.prometheus_handler.fetch_queries(start_time_str, end_time_str,
+                                                   queries, columns, step)
+        if save:
+            df.to_csv(save_path)
+        return df
+
 
 if __name__ == '__main__':
     logging.basicConfig(filename='dataset_creator.log', level=logging.DEBUG)
@@ -301,4 +334,5 @@ if __name__ == '__main__':
     #                         save_dir="/home/mounted_drive/thesis/prometheus",
     #                         use_rate=False,
     #                         step="1s")
-    dc.merge_prometheus_dfs("data/prometheus/Mon Feb 28 13:37:24 2022")
+    # dc.merge_prometheus_dfs("data/prometheus/Mon Feb 28 13:37:24 2022")
+    dc.create_prometheus_queries_df("/home/bsi/adaptive-monitoring-nn/pipeline/configs/dataset.json")
