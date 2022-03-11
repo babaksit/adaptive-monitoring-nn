@@ -1,18 +1,15 @@
+import argparse
+import json
 import logging
 import os
 import time
 from datetime import datetime, timedelta
 from typing import Union
 
-from darts import TimeSeries
-from prometheus_pandas import query
-
-from pipeline.dataset.dataset_loader import DatasetLoader
-from pipeline.models.forecast_models import TFTModel, NBeatsModel, ForecastModel
 import pandas as pd
-import subprocess
-from kubernetes import client
-import requests
+from darts import TimeSeries
+
+from pipeline.models.forecast_models import TFTModel, NBeatsModel, ForecastModel
 from pipeline.prometheus.handler import PrometheusHandler
 
 
@@ -23,16 +20,13 @@ class Pipeline:
     """
     forecast_model: ForecastModel
 
-    def __init__(self, model_name, dataset_path: str,
-                 predict_length: int, fetching_duration: int,
-                 queries: list, queries_column_names: list,
-                 target_cols: list, time_col: str = "Time",
-                 frequency: str = "1min", augment: bool = True,
-                 fetching_offset: int = 15,
-                 prometheus_url="http://127.0.0.1:9090/"):
+    def __init__(self, config_path: str):
         """
-
         Parameters
+        ----------
+        config_path: Path to the pipeline config file
+
+        Variables
         ----------
         model_name : str
             The name of the model to create
@@ -51,23 +45,33 @@ class Pipeline:
         fetching_offset: int
             Number of seconds to trigger fetching metrics
             before the actual desired time to start fetching
+        query_delta_time: str
+            string format of time according to "https://pandas.pydata.org/pandas-docs/stable/user_guide/timedeltas.html"
+            in order to shift the queries which are fetched during runtime, so it matches the scenario time
         """
-        self.dataset_loader = DatasetLoader(dataset_path,
-                                            time_col, target_cols,
-                                            resample_freq=frequency,
-                                            augment=augment
-                                            )
-        self.forecast_model = None
+
+        with open(config_path) as f:
+            self.config = json.load(f)
+
+        # self.dataset_loader = DatasetLoader(self.config["dataset_path"],
+        #                                     self.config["time_col"],
+        #                                     self.config["target_cols"],
+        #                                     resample_freq=self.config["frequency"],
+        #                                     augment=self.config["augment"]
+        #                                     )
         self.model_dict = {"TFT": TFTModel(), "NBeats": NBeatsModel()}
-        self.create_forecast_model(model_name)
-        self.predict_length = predict_length
-        self.fetching_duration = fetching_duration
-        self.predict_frequency = frequency
-        self.queries = queries
-        self.queries_column_names = queries_column_names
-        self.fetching_offset = fetching_offset
+        # self.create_forecast_model(self.config["model_name"])
+        self.forecast_model = self.load_forecast_model(self.config["model_name"], self.config["model_path"])
+
+        self.predict_length = self.config["predict_length"]
+        self.fetching_duration = self.config["fetching_duration"]
+        self.predict_frequency = self.config["predict_frequency"]
+        self.queries = [query['query'] for query in self.config["queries"]]
+        self.queries_column_names = [query['column_name'] for query in self.config["queries"]]
+        self.fetching_offset = self.config["fetching_offset"]
+        self.query_delta_time = self.config["query_delta_time"]
         self.stop_pipeline = False
-        self.prometheus_url = prometheus_url
+        self.prometheus_url = self.config["prometheus_url"]
         self.prometheus_handler = PrometheusHandler(self.prometheus_url)
         self.date_format_str = '%Y-%m-%dT%H:%M:%SZ'
         self.save_new_queries_dir = "prometheus_new_queries"
@@ -95,20 +99,12 @@ class Pipeline:
         self.forecast_model.create_model()
         return True
 
-    def train(self):
-        train, val, test = self.dataset_loader.get_train_val_test()
-        self.forecast_model.fit(train, val)
+    # def train(self):
+    #     train, val, test = self.dataset_loader.get_train_val_test()
+    #     self.forecast_model.fit(train, val)
 
-    # def get_series_to_predict(self, start_time, length=None, freq=None):
-    #     if not length:
-    #         length = self.predict_length
-    #     if not freq:
-    #         freq = self.predict_frequency
-    #
-    #     rng = pd.date_range(start_time, periods=length, freq=freq)
-    #     df = pd.DataFrame({'Val': 0}, index=rng)
-    #     return TimeSeries.from_dataframe(df)
-    #
+    def load_forecast_model(self, model_name, model_path):
+        pass
 
     @staticmethod
     def get_series_to_predict(first_series: TimeSeries, second_series: TimeSeries):
@@ -120,12 +116,6 @@ class Pipeline:
     def is_high_confidence(self, prediction):
         pass
 
-    def __get_queries(self) -> list:
-        pass
-
-    def enable_monitoring(self):
-        pass
-
     def save_new_queries_df(self, df, start_time, end_time):
 
         unique_file_name = start_time.strftime(self.date_format_str) \
@@ -134,12 +124,31 @@ class Pipeline:
         save_path = os.path.join(self.save_new_queries_dir, (unique_file_name + ".csv"))
         df.to_csv(save_path)
 
-    def fetch_metrics(self, duration_minutes, return_series=True) -> Union[pd.DataFrame,
+    @staticmethod
+    def get_start_time(server_time_diff: int = 1):
+        """
+
+        Parameters
+        ----------
+        server_time_diff : int
+            difference time between server and current system
+
+        Returns
+        -------
+
+        """
+
+        return datetime.now() + timedelta(hours=server_time_diff)
+
+    def shift_df(self, df):
+        df.index = df.index.shift(freq=pd.Timedelta(self.query_delta_time))
+
+    def fetch_queries(self, duration_minutes, return_series=True) -> Union[pd.DataFrame,
                                                                            TimeSeries]:
 
         self.prometheus_handler.change_fetching_state(enable=True)
-        start_time = datetime.now()
-        end_time = datetime.now() + timedelta(minutes=duration_minutes)
+        start_time = self.get_start_time()
+        end_time = start_time + timedelta(minutes=duration_minutes)
         time.sleep(duration_minutes * 60)
 
         # TODO check if we should disable fetching metrics after fetching metrics
@@ -148,6 +157,7 @@ class Pipeline:
                                                    end_time.strftime(self.date_format_str),
                                                    self.queries,
                                                    self.queries_column_names)
+        self.shift_df(df)
         self.save_new_queries_df(df, start_time, end_time)
 
         # TODO check if this works
@@ -155,12 +165,11 @@ class Pipeline:
             return TimeSeries.from_dataframe(df)
         return df
 
-
     def run(self):
-
-        fetched_series = self.fetch_metrics(self.fetching_duration)
+        fetched_series = self.fetch_queries(self.fetching_duration)
         series_to_predict = fetched_series
         last_high_confidence_prediction_time: datetime = None
+        time_diff_sec = 0.0
         while not self.stop_pipeline:
             prediction = self.predict(series_to_predict)
             if self.is_high_confidence(prediction):
@@ -181,10 +190,17 @@ class Pipeline:
             if time_diff_sec > 0.0:
                 time.sleep(time_diff_sec)
 
-            series_to_predict = self.fetch_metrics(self.predict_length)
+            series_to_predict = self.fetch_queries(self.predict_length)
 
 
 if __name__ == '__main__':
-    p = Pipeline("TFT", ...)
-    p.train()
-    p.run()
+    logging.basicConfig(level=logging.DEBUG,
+                        format='%(asctime)s %(levelname)-4s %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S')
+    parser = argparse.ArgumentParser(description="Pipeline")
+    parser.add_argument('--pipeline-config', type=str,
+                        help='Path to the pipeline config file', default="configs/pipeline.json")
+    args = parser.parse_args()
+
+    pipeline = Pipeline(args.pipeline_config)
+    pipeline.run()

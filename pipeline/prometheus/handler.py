@@ -66,6 +66,7 @@ class PrometheusHandler:
         df_list = []
         for c, query_str in enumerate(queries):
             logging.info(query_str)
+            chunked_df_list = []
             for i, cd in enumerate(chunked_datetime):
                 try:
                     df = self.prometheus.query_range(query_str, cd[0], cd[1], step)
@@ -80,12 +81,17 @@ class PrometheusHandler:
                     df.rename(columns={df.columns[0]: columns[c]}, inplace=True)
                 else:
                     df.rename(columns={df.columns[0]: query}, inplace=True)
-                df_list.append(df)
+                chunked_df_list.append(df)
+            try:
+                df_list.append(pd.concat(chunked_df_list, axis=0))
+            except Exception as e:
+                logging.error("could not concat dataframes: " + str(e))
         try:
             result = pd.concat(df_list, axis=1)
             result.index.name = "Time"
         except Exception as e:
             logging.error("could not concat dataframes: " + str(e))
+
         return result
 
     def change_fetching_state(self,

@@ -102,7 +102,7 @@ class DatasetLoader:
                 x_aug = aug.augment(x)
                 tmp_augmented_series = np.concatenate((tmp_augmented_series, x_aug), axis=0)
                 if plot:
-                    self.plot_aug(x, x_aug, title=str(aug))
+                    self.plot_augment_series(x, x_aug, title=str(aug))
             self.augmented_series.append(tmp_augmented_series)
 
         self.augmented_series = np.array(self.augmented_series).T

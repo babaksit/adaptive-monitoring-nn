@@ -1,16 +1,11 @@
-import glob
+import json
 import logging
 import os
-from datetime import timedelta, datetime
-from pathlib import Path
-
-import dateutil.rrule as rrule
-import pandas as pd
-from prometheus_api_client import PrometheusConnect
-from prometheus_pandas import query
 import time
+from pathlib import Path
+import pandas as pd
+
 from pipeline.prometheus.handler import PrometheusHandler
-import json
 
 
 class DatasetCreator:
@@ -25,7 +20,19 @@ class DatasetCreator:
         self.config = None
         self.prometheus_handler = None
 
-    def create_prometheus_queries_df(self, config_path: str, save: bool = True) -> pd.DataFrame:
+    def shift_df_index(self):
+        """
+        Shift dataframe index to the beginning of the day
+        Returns
+        -------
+
+        """
+
+        day_start = pd.Timestamp(self.df.index[0].strftime('%Y-%m-%d 00:00:00'))
+        self.df.index = self.df.index.shift(periods=1, freq=(day_start - self.df.index[0]))
+
+    def create_prometheus_queries_df(self, config_path: str, save: bool = True,
+                                     shift_index: bool = True) -> pd.DataFrame:
 
         with open(config_path) as f:
             self.config = json.load(f)
@@ -51,7 +58,10 @@ class DatasetCreator:
         save_path = os.path.join(save_dir, save_time)
 
         self.df = self.prometheus_handler.fetch_queries(start_time_str, end_time_str,
-                                                   queries, columns, step)
+                                                        queries, columns, step)
+        #
+        if shift_index:
+            self.shift_df_index()
         if save:
             self.df.to_csv(save_path)
         return self.df
