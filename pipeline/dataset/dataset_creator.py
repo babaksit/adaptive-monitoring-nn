@@ -20,15 +20,18 @@ class DatasetCreator:
         self.config = None
         self.prometheus_handler = None
 
-    def shift_df_index(self):
+    def shift_df_index(self, date_time: str = None):
         """
-        Shift dataframe index to the beginning of the day
+        Shift dataframe index to the beginning of the day or given date_time
         Returns
         -------
 
         """
 
-        day_start = pd.Timestamp(self.df.index[0].strftime('%Y-%m-%d 00:00:00'))
+        if date_time:
+            day_start = pd.Timestamp(self.df.index[0].strftime(date_time))
+        else:
+            day_start = pd.Timestamp(self.df.index[0].strftime('%Y-%m-%d 00:00:00'))
         self.df.index = self.df.index.shift(periods=1, freq=(day_start - self.df.index[0]))
 
     def create_prometheus_queries_df(self, config_path: str, save: bool = True,
