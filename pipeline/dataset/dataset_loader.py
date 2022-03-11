@@ -75,10 +75,55 @@ class DatasetLoader:
         self.scaler = Scaler()
         # TODO scale train test val separately
         self.series_scaled = self.scaler.fit_transform(series)
-        self.series_scaled.plot(label="v")
+        # self.series_scaled.plot(label="v")
 
-    def augment_series(self, plot=False):
-        X = self.series_scaled.pd_dataframe().to_numpy().swapaxes(0, 1)
+    def augment_specific_times(self, series, date_time_ranges):
+        """
+
+        Parameters
+        ----------
+        series :
+        date_time_ranges : list
+            list of slices date_time_ranges to augment based on
+            e.g. [slice("2022-03-01 00:01:02", "2022-03-02 00:02:05"), ...]
+
+        Returns
+        -------
+
+        """
+
+        augmentations = [
+            tsaug.AddNoise(scale=0.002),
+        ]
+        augmented_sliced_series = []
+        for date_time_range in date_time_ranges:
+            sdf = series.pd_dataframe()[date_time_range]
+            sliced_serie = TimeSeries.from_dataframe(sdf)
+            X = sliced_serie.pd_dataframe().to_numpy().swapaxes(0, 1)
+            augmented_sliced_serie = []
+            for x in X:
+                tmp_augmented_series = []
+                for aug in augmentations:
+                    x_aug = aug.augment(x)
+                    tmp_augmented_series = np.concatenate((tmp_augmented_series, x_aug), axis=0)
+                augmented_sliced_serie.append(tmp_augmented_series)
+
+            augmented_sliced_serie = np.array(augmented_sliced_serie).T
+            # step one period of time ahead
+            index = pd.date_range(start=sdf.index[-1], freq=self.resample_freq,
+                                  periods=2)
+            index = pd.date_range(start=index[1], freq=self.resample_freq,
+                                  periods=augmented_sliced_serie.shape[0])
+            augmented_sliced_serie = pd.DataFrame(data=augmented_sliced_serie, columns=self.target_cols, index=index)
+            augmented_sliced_serie[self.time_col] = index
+            augmented_sliced_serie = TimeSeries.from_dataframe(augmented_sliced_serie, self.time_col, self.target_cols)
+            augmented_sliced_series.append(augmented_sliced_serie)
+
+        return sum(augmented_sliced_series) / len(augmented_sliced_series)
+
+    def augment_series(self, series: TimeSeries, plot=False):
+        X = series.pd_dataframe().to_numpy().swapaxes(0, 1)
+        # X = self.series_scaled.pd_dataframe().to_numpy().swapaxes(0, 1)
         augmentations = [
             tsaug.AddNoise(scale=0.002),
             tsaug.Convolve(window="flattop", size=15),
@@ -87,15 +132,21 @@ class DatasetLoader:
             tsaug.Quantize(n_levels=200),
             tsaug.TimeWarp(n_speed_change=10, max_speed_ratio=1.01),
             # repeat randomly
-            tsaug.Drift(max_drift=0.005, n_drift_points=20),
-            tsaug.Pool(size=6),
-            tsaug.Convolve(window="flattop", size=16),
-            tsaug.AddNoise(scale=0.001),
-            tsaug.Quantize(n_levels=250),
-            tsaug.TimeWarp(n_speed_change=10, max_speed_ratio=1.005),
+            tsaug.AddNoise(scale=0.002),
+            tsaug.Convolve(window="flattop", size=15),
+            tsaug.Drift(max_drift=0.01, n_drift_points=20),
+            tsaug.Pool(size=5),
+            tsaug.Quantize(n_levels=200),
+            tsaug.TimeWarp(n_speed_change=10, max_speed_ratio=1.01)
+            # tsaug.Drift(max_drift=0.001, n_drift_points=20),
+            # tsaug.Pool(size=6),
+            # tsaug.Convolve(window="flattop", size=16),
+            # tsaug.AddNoise(scale=0.001),
+            # tsaug.Quantize(n_levels=250),
+            # tsaug.TimeWarp(n_speed_change=10, max_speed_ratio=1.005),
         ]
 
-        self.augmented_series = []
+        augmented_series = []
         for x in X:
             tmp_augmented_series = x
             for aug in augmentations:
@@ -103,17 +154,17 @@ class DatasetLoader:
                 tmp_augmented_series = np.concatenate((tmp_augmented_series, x_aug), axis=0)
                 if plot:
                     self.plot_augment_series(x, x_aug, title=str(aug))
-            self.augmented_series.append(tmp_augmented_series)
+            augmented_series.append(tmp_augmented_series)
 
-        self.augmented_series = np.array(self.augmented_series).T
+        augmented_series = np.array(augmented_series).T
 
         index = pd.date_range(start=self.df[self.time_col].iloc[0], freq=self.resample_freq,
-                              periods=self.augmented_series.shape[0])
-        self.augmented_series = pd.DataFrame(data=self.augmented_series, columns=self.target_cols, index=index)
-        self.augmented_series[self.time_col] = index
-        self.augmented_series = TimeSeries.from_dataframe(self.augmented_series, self.time_col, self.target_cols)
+                              periods=augmented_series.shape[0])
+        augmented_series = pd.DataFrame(data=augmented_series, columns=self.target_cols, index=index)
+        augmented_series[self.time_col] = index
+        augmented_series = TimeSeries.from_dataframe(augmented_series, self.time_col, self.target_cols)
 
-        return self.augmented_series
+        return augmented_series
 
     @staticmethod
     def plot_augment_series(x, x_aug, m=None, n=None, title=""):
@@ -133,3 +184,31 @@ class DatasetLoader:
         val, test = val.split_before(val_test_ratio)
 
         return train, val, test
+
+
+if __name__ == '__main__':
+    dl = DatasetLoader('/home/bsi/adaptive-monitoring-nn/notebooks/data/cpu_rate/cpu_rate_test.csv', "Time",
+                       ["cpu_rate"], resample_freq="1min", augment=False)
+    train, val, test = dl.get_train_val_test(train_size=6 / 7)
+    train.plot()
+    # val.plot()
+    # test.plot()
+
+    print(train)
+    # print(val)
+    #
+    # print(test)
+
+    ss = dl.augment_specific_times(train, [slice("2022-02-23 10:37:00", "2022-02-24 10:37:00")])
+
+    print(ss.pd_dataframe())
+    print(train.pd_dataframe())
+
+    ss.plot(label="augemnted")
+    # plt.show()
+    #
+    ss = train.append(ss)
+    ss = dl.augment_series(ss)
+
+    ss.plot(label="augemnted_all")
+    plt.show()
