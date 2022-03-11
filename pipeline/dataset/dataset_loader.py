@@ -14,14 +14,30 @@ class DatasetLoader:
     """
 
     def __init__(self, df_path: str, time_col: str,
-                 target_cols, convert_cols_to_rate: list = None, resample_freq='1Min',
+                 target_cols, convert_cols_to_rate: list = None,
+                 resample_freq='1Min', shift_df_datetime: str = None,
                  augment=False):
+        """
+
+        Parameters
+        ----------
+        df_path :
+        time_col :
+        target_cols :
+        convert_cols_to_rate :
+        resample_freq :
+        shift_df_datetime : str
+            Shift dataframe index to the beginning of the given date_time
+
+        augment :
+        """
 
         self.df = None
         self.darts_df = None
         self.series_scaled = None
         self.augmented_series = None
         self.scaler = None
+        self.shift_df_datetime = shift_df_datetime
         self.time_col = time_col
         self.convert_cols_to_rate = convert_cols_to_rate
         self.target_cols = target_cols
@@ -58,6 +74,9 @@ class DatasetLoader:
         self.darts_df = self.df[[self.time_col] + self.target_cols].copy()
         self.darts_df[self.time_col] = pd.to_datetime(self.darts_df[self.time_col], infer_datetime_format=True)
         self.darts_df = self.darts_df.set_index(self.time_col)
+        if self.shift_df_datetime:
+            day_start = pd.Timestamp(self.darts_df.index[0].strftime(self.shift_df_datetime))
+            self.darts_df.index = self.darts_df.index.shift(periods=1, freq=(day_start - self.darts_df.index[0]))
         self.darts_df = self.darts_df.resample(self.resample_freq).mean()
         self.darts_df = self.darts_df.reset_index()
 
