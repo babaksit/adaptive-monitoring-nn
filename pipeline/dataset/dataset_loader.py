@@ -71,6 +71,7 @@ class DatasetLoader:
     def shift_series_to(self, series: TimeSeries, date_time):
         df = series.pd_dataframe()
         self.shift_df_to(df, date_time)
+        return TimeSeries.from_dataframe(df)
 
     def create_darts_df(self):
         """
