@@ -189,7 +189,7 @@ class DatasetLoader:
 
         augmented_series = np.array(augmented_series).T
 
-        index = pd.date_range(start=series_df[self.time_col].iloc[0], freq=self.resample_freq,
+        index = pd.date_range(start=series_df.index[0], freq=self.resample_freq,
                               periods=augmented_series.shape[0])
         augmented_series = pd.DataFrame(data=augmented_series, columns=self.target_cols, index=index)
         augmented_series[self.time_col] = index
