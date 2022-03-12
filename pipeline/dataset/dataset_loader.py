@@ -63,6 +63,15 @@ class DatasetLoader:
         # Fill NaNs with preceding values
         self.darts_df[cols] = self.darts_df[cols].fillna(method='ffill')
 
+    @staticmethod
+    def shift_df_to(df: pd.DataFrame, date_time: str):
+        day_start = pd.Timestamp(df.index[0].strftime(date_time))
+        df.index = df.index.shift(periods=1, freq=(day_start - df.index[0]))
+
+    def shift_series_to(self, series: TimeSeries, date_time):
+        df = series.pd_dataframe()
+        self.shift_df_to(df, date_time)
+
     def create_darts_df(self):
         """
         Create Pandas DataFrame for the darts library
@@ -75,8 +84,9 @@ class DatasetLoader:
         self.darts_df[self.time_col] = pd.to_datetime(self.darts_df[self.time_col], infer_datetime_format=True)
         self.darts_df = self.darts_df.set_index(self.time_col)
         if self.shift_df_datetime:
-            day_start = pd.Timestamp(self.darts_df.index[0].strftime(self.shift_df_datetime))
-            self.darts_df.index = self.darts_df.index.shift(periods=1, freq=(day_start - self.darts_df.index[0]))
+            self.shift_df_to(self.darts_df, self.shift_df_datetime)
+            # day_start = pd.Timestamp(self.darts_df.index[0].strftime(self.shift_df_datetime))
+            # self.darts_df.index = self.darts_df.index.shift(periods=1, freq=(day_start - self.darts_df.index[0]))
         self.darts_df = self.darts_df.resample(self.resample_freq).mean()
         self.darts_df = self.darts_df.reset_index()
 
@@ -217,7 +227,6 @@ if __name__ == '__main__':
     # print(val)
     #
     # print(test)
-
     ss = dl.augment_specific_times(train, [slice("2022-02-23 10:37:00", "2022-02-24 10:37:00")])
 
     print(ss.pd_dataframe())
