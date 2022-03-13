@@ -199,7 +199,7 @@ class DatasetLoader:
         sdf2.set_index(index,inplace=True)
 
         result = pd.concat([sdf1,sdf2])
-        return result
+        return TimeSeries.from_dataframe(result)
     def augment_series(self, series: TimeSeries, augmentations=None, plot=False):
         X = series.pd_dataframe().to_numpy().swapaxes(0, 1)
         series_df = series.pd_dataframe(copy=False)
