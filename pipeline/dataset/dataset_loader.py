@@ -189,6 +189,17 @@ class DatasetLoader:
             result = result.append(tmp_train)
         return result
 
+    def series_append(self, series_1: TimeSeries, series_2: TimeSeries):
+        sdf1 = series_1.pd_dataframe(copy=False)
+        sdf2 = series_2.pd_dataframe()
+        index = pd.date_range(start=sdf1.index[-1], freq=self.resample_freq,
+                              periods=2)
+        index = pd.date_range(start=index[1], freq=self.resample_freq,
+                              periods=sdf2.shape[0])
+        sdf2.set_index(index,inplace=True)
+
+        result = pd.concat([sdf1,sdf2])
+        return result
     def augment_series(self, series: TimeSeries, augmentations=None, plot=False):
         X = series.pd_dataframe().to_numpy().swapaxes(0, 1)
         series_df = series.pd_dataframe(copy=False)
