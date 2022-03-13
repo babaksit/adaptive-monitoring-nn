@@ -263,29 +263,36 @@ class DatasetLoader:
 
         return train, val, test
 
+    def get_train_val_by_date(self, train_end: str):
+
+        train, val = self.series_scaled.split_before(pd.Timestamp(train_end))
+
+        return train, val
+
 
 if __name__ == '__main__':
     dl = DatasetLoader('/home/bsi/adaptive-monitoring-nn/notebooks/data/cpu_rate/cpu_rate_test.csv', "Time",
                        ["cpu_rate"], resample_freq="1min", augment=False)
-    train, val, test = dl.get_train_val_test(train_size=6 / 7)
-    train.plot()
-    # val.plot()
-    # test.plot()
-
-    print(train)
-    # print(val)
+    train, val = dl.get_train_val_by_date("")
+    # train, val, test = dl.get_train_val_test(train_size=6 / 7)
+    # train.plot()
+    # # val.plot()
+    # # test.plot()
     #
-    # print(test)
-    ss = dl.augment_specific_times(train, [slice("2022-02-23 10:37:00", "2022-02-24 10:37:00")])
-
-    print(ss.pd_dataframe())
-    print(train.pd_dataframe())
-
-    ss.plot(label="augemnted")
+    # print(train)
+    # # print(val)
+    # #
+    # # print(test)
+    # ss = dl.augment_specific_times(train, [slice("2022-02-23 10:37:00", "2022-02-24 10:37:00")])
+    #
+    # print(ss.pd_dataframe())
+    # print(train.pd_dataframe())
+    #
+    # ss.plot(label="augemnted")
+    # # plt.show()
+    # #
+    # ss = train.append(ss)
+    # ss = dl.augment_series(ss)
+    #
+    # ss.plot(label="augemnted_all")
     # plt.show()
-    #
-    ss = train.append(ss)
-    ss = dl.augment_series(ss)
-
-    ss.plot(label="augemnted_all")
-    plt.show()
