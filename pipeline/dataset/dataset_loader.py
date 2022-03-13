@@ -107,11 +107,12 @@ class DatasetLoader:
         self.series_scaled = self.scaler.fit_transform(series)
         # self.series_scaled.plot(label="v")
 
-    def augment_specific_times(self, series, date_time_ranges):
+    def augment_specific_times(self, series, date_time_ranges, augmentations=None):
         """
 
         Parameters
         ----------
+        augmentations :
         series :
         date_time_ranges : list
             list of slices date_time_ranges to augment based on
@@ -121,10 +122,8 @@ class DatasetLoader:
         -------
 
         """
-
-        augmentations = [
-            tsaug.AddNoise(scale=0.002),
-        ]
+        if augmentations is None:
+            augmentations = [tsaug.AddNoise(scale=0.001)]
         augmented_sliced_series = []
         for date_time_range in date_time_ranges:
             sdf = series.pd_dataframe()[date_time_range]
@@ -149,33 +148,33 @@ class DatasetLoader:
             augmented_sliced_serie = TimeSeries.from_dataframe(augmented_sliced_serie, self.time_col, self.target_cols)
             augmented_sliced_series.append(augmented_sliced_serie)
 
-        return sum(augmented_sliced_series) / len(augmented_sliced_series)
+        augmented_sliced_series = sum(augmented_sliced_series) / len(augmented_sliced_series)
+        augmented_sliced_series = dl.shift_series_to(series=augmented_sliced_series, date_time=str(index[0]))
+        return augmented_sliced_series
 
-    def augment_series(self, series: TimeSeries, plot=False):
+    def augment_series(self, series: TimeSeries, augmentations=None, plot=False):
         X = series.pd_dataframe().to_numpy().swapaxes(0, 1)
         series_df = series.pd_dataframe(copy=False)
-        # X = self.series_scaled.pd_dataframe().to_numpy().swapaxes(0, 1)
-        augmentations = [
-            tsaug.AddNoise(scale=0.002),
-            tsaug.Convolve(window="flattop", size=15),
-            tsaug.Drift(max_drift=0.01, n_drift_points=20),
-            tsaug.Pool(size=5),
-            tsaug.Quantize(n_levels=200),
-            tsaug.TimeWarp(n_speed_change=10, max_speed_ratio=1.01),
-            # repeat randomly
-            tsaug.AddNoise(scale=0.002),
-            tsaug.Convolve(window="flattop", size=15),
-            tsaug.Drift(max_drift=0.01, n_drift_points=20),
-            tsaug.Pool(size=5),
-            tsaug.Quantize(n_levels=200),
-            tsaug.TimeWarp(n_speed_change=10, max_speed_ratio=1.01)
-            # tsaug.Drift(max_drift=0.001, n_drift_points=20),
-            # tsaug.Pool(size=6),
-            # tsaug.Convolve(window="flattop", size=16),
-            # tsaug.AddNoise(scale=0.001),
-            # tsaug.Quantize(n_levels=250),
-            # tsaug.TimeWarp(n_speed_change=10, max_speed_ratio=1.005),
-        ]
+
+        if augmentations is None:
+            augmentations = [
+                tsaug.AddNoise(scale=0.03),
+                tsaug.AddNoise(scale=0.028),
+                tsaug.AddNoise(scale=0.032),
+                tsaug.AddNoise(scale=0.036),
+                tsaug.AddNoise(scale=0.04),
+                tsaug.AddNoise(scale=0.029),
+                # tsaug.TimeWarp(n_speed_change=20, max_speed_ratio=1.11),
+                tsaug.AddNoise(scale=0.033),
+                tsaug.AddNoise(scale=0.027),
+                tsaug.AddNoise(scale=0.031),
+                tsaug.AddNoise(scale=0.035),
+                tsaug.AddNoise(scale=0.039),
+                tsaug.AddNoise(scale=0.038),
+                # tsaug.TimeWarp(n_speed_change=20, max_speed_ratio=1.1),
+                # tsaug.Drift(max_drift=0.04, n_drift_points=20),
+
+            ]
 
         augmented_series = []
         for x in X:
