@@ -19,10 +19,6 @@
             "column_name": "read_bytes_rate"
         },
         {
-            "query": "rate(node_disk_read_bytes_total{device=\"dm-0\"}[1m])",
-            "column_name": "read_bytes_rate"
-        },
-        {
             "query": "rate(node_disk_written_bytes_total{device=\"dm-0\"}[1m])",
             "column_name": "write_bytes_rate"
         },
