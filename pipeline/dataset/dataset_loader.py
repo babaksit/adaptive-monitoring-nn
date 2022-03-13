@@ -152,6 +152,43 @@ class DatasetLoader:
         augmented_sliced_series = self.shift_series_to(series=augmented_sliced_series, date_time=str(index[0]))
         return augmented_sliced_series
 
+    def simple_add_augment(series: TimeSeries, min_, max_, step_):
+        odf = series.pd_dataframe(copy=False)
+        result = series.copy()
+        shuffled = np.arange(min_, max_, step_)
+        np.random.shuffle(shuffled)
+        for i in shuffled:
+            sdf = result.pd_dataframe(copy=False)
+            index = pd.date_range(start=sdf.index[-1], freq="1Min",
+                                  periods=2)
+            index = pd.date_range(start=index[1], freq="1Min",
+                                  periods=odf.shape[0])
+            tmp_train = series + i
+            tmp_train = tmp_train.pd_dataframe()
+            tmp_train.set_index(index, inplace=True)
+            tmp_train = TimeSeries.from_dataframe(tmp_train)
+            result = result.append(tmp_train)
+        return result
+
+    def simple_add_augment(self, series: TimeSeries, min_, max_, step_):
+
+        odf = series.pd_dataframe(copy=False)
+        result = series.copy()
+        shuffled = np.arange(min_, max_, step_)
+        np.random.shuffle(shuffled)
+        for i in shuffled:
+            sdf = result.pd_dataframe(copy=False)
+            index = pd.date_range(start=sdf.index[-1], freq=self.resample_freq,
+                                  periods=2)
+            index = pd.date_range(start=index[1], freq=self.resample_freq,
+                                  periods=odf.shape[0])
+            tmp_train = series + i
+            tmp_train = tmp_train.pd_dataframe()
+            tmp_train.set_index(index, inplace=True)
+            tmp_train = TimeSeries.from_dataframe(tmp_train)
+            result = result.append(tmp_train)
+        return result
+
     def augment_series(self, series: TimeSeries, augmentations=None, plot=False):
         X = series.pd_dataframe().to_numpy().swapaxes(0, 1)
         series_df = series.pd_dataframe(copy=False)
