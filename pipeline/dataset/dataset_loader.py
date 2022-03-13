@@ -149,7 +149,7 @@ class DatasetLoader:
             augmented_sliced_series.append(augmented_sliced_serie)
 
         augmented_sliced_series = sum(augmented_sliced_series) / len(augmented_sliced_series)
-        augmented_sliced_series = dl.shift_series_to(series=augmented_sliced_series, date_time=str(index[0]))
+        augmented_sliced_series = self.shift_series_to(series=augmented_sliced_series, date_time=str(index[0]))
         return augmented_sliced_series
 
     def augment_series(self, series: TimeSeries, augmentations=None, plot=False):
