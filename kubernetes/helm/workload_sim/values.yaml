@@ -1,5 +1,5 @@
 rabbitmqHost : "127.0.0.1"
-replicas: 2
+replicas: 16
 cpuScale : 1
 memoryScale : 100000
 # filePath: "test/"
