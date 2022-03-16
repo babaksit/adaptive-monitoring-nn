@@ -1,0 +1,48 @@
+## Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq-deployment
+  labels:
+    app: rabbitmq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9419"
+        kubernetes.io/ingress-bandwidth: 1M
+        kubernetes.io/egress-bandwidth: 1M
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+      - name: rabbitmq
+        image: rabbitmq:3-management
+        ports:
+          - name: rabbitmq-ampq
+            containerPort: 5672
+          - name: rabbitmq-mng
+            containerPort: 15672
+        volumeMounts:
+          - name: rabbitmq-persistent-storage
+            mountPath: /var/lib/rabbitmq/
+          - name: localtime
+            readOnly: true
+            mountPath: /etc/localtime
+      - name: rabbitmq-exporter
+        image: kbudde/rabbitmq-exporter
+        ports:
+          - containerPort: 9419
+      volumes:
+        - name: rabbitmq-persistent-storage
+          persistentVolumeClaim:
+            claimName: rabbitmq-claim
+        - name: localtime
+          hostPath:
+            type: File
+            path: /etc/localtime
