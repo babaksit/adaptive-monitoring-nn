@@ -16,11 +16,13 @@ class Subscriber:
         self.last_saved_time = -1
         self.stop_thread = False
         self.new_data = False
-        self.tmp_str = "qrqpqmcomvowqnvjmrjoiqjroqcJcnjfnak23nfkajsafdkj#fkanckafkjafkariria" * 10
+        # 1 KiB data
+        self.one_kb = "A" * 1024
         self.data = 0
         self.temp_mem = []
         self.cpu_scale = cpu_scale
         self.memory_scale = memory_scale
+        #creating unique file name for each pod
         self.file_name = file_path + str(time.time_ns()) + ".txt"
         fle = Path(self.file_name)
         fle.touch(exist_ok=True)
@@ -57,8 +59,7 @@ class Subscriber:
     def dummy_func(self):
         now = time.time()
         try:
-
-            self.temp_mem = [self.tmp_str] * self.data * self.memory_scale
+            self.temp_mem = self.one_kb * self.data * self.memory_scale
             for _ in range(self.data * self.cpu_scale):
                 f = os.open(self.file_name, os.O_DIRECT | os.O_RDWR)
                 f = os.fdopen(f, 'rb+')

@@ -1,7 +1,8 @@
 rabbitmqHost : "127.0.0.1"
 replicas: 10
 cpuScale : 1
-memoryScale : 100000
+# 10 MiB
+memoryScale : 10240
 # filePath: "test/"
 dirPath: "/var/local/workload_sim/"
 
