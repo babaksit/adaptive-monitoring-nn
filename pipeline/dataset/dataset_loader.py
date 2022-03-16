@@ -43,9 +43,9 @@ class DatasetLoader:
         self.target_cols = target_cols
         self.resample_freq = resample_freq
         self.load_df(df_path)
-        self.remove_constant_cols()
+        # self.remove_constant_cols()
         self.create_darts_df()
-        self.create_rate_cols(convert_cols_to_rate)
+        # self.create_rate_cols(convert_cols_to_rate)
         self.scale_darts_series()
         if augment:
             self.series_scaled = self.augment_series()

@@ -6,7 +6,7 @@ metadata:
   labels:
     app: workload-simulator
 spec:
-  replicas: 1
+  replicas: {{ .Values.replicas }}
   selector:
     matchLabels:
       app: workload-simulator
@@ -19,26 +19,26 @@ spec:
         kubernetes.io/hostname: minikube-m02
       containers:
       - name: workload-simulator
-        image: babaksit/workload_simulator:v0.0.4
+        image: babaksit/workload_simulator:v0.0.6
         env:
           - name: RABBITMQ_HOST
             value: 
         args: ["--cpu-scale", "{{ .Values.cpuScale }}",
                "--memory-scale", "{{ .Values.memoryScale }}", 
                "--rabbitmq-host", "{{ .Values.rabbitmqHost }}",
-               "--file-path", {{ .Values.dirPath }}{{ .Values.filePath }}]
+               "--file-path", {{ .Values.dirPath }}]
         volumeMounts:
           - mountPath: {{ .Values.dirPath }}
             name: mydir
-          - mountPath: {{ .Values.dirPath }}{{ .Values.filePath }}
-            name: myfile
+          # - mountPath: {{ .Values.dirPath }}{{ .Values.filePath }}
+          #   name: myfile
       volumes:
         - name: mydir
           hostPath:
             path: {{ .Values.dirPath }}
             type: DirectoryOrCreate
-        - name: myfile
-          hostPath:
-            path: {{ .Values.dirPath }}{{ .Values.filePath }}
-            type: FileOrCreate
+        # - name: myfile
+        #   hostPath:
+        #     path: {{ .Values.dirPath }}{{ .Values.filePath }}
+        #     type: FileOrCreate
 

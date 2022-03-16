@@ -16,11 +16,11 @@ class Subscriber:
         self.last_saved_time = -1
         self.stop_thread = False
         self.new_data = False
-        self.data = 1
+        self.data = 0
         self.temp_mem = []
         self.cpu_scale = cpu_scale
         self.memory_scale = memory_scale
-        self.file_name = file_path
+        self.file_name = file_path + str(time.time_ns()) + ".txt"
         fle = Path(self.file_name)
         fle.touch(exist_ok=True)
         self.tmp_mmap = None
