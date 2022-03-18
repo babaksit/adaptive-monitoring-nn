@@ -7,19 +7,22 @@
     "time_col": "Time",
     "frequency": "1min",
     "augment": true,
-    "target_cols": ["cpu_rate","memory_rate"],
+    "keep_metric_url": "http://127.0.0.1:9393/keep_metric?metric=",
+    "clear_keep_list_url": "http://127.0.0.1:9393/clear_keep_list",
     "fetching_offset": "15",
     "query_delta_time": "-3 days 5 hours 26 min 10 seconds",
     "prometheus_url":"http://127.0.0.1:9090/" ,
     "queries":
     [
         {
+            "column_name" : "cpu_rate",
             "query" : "(100 - (avg by (instance) (rate(node_cpu_seconds_total{mode='idle'}[1m])) * 100))",
-            "column_name" : "cpu_rate"
+            "metrics": ["node_cpu_seconds_total"]
         },
         {
+            "column_name": "memory_rate",
             "query": "100 * (1 - avg_over_time( (node_memory_MemAvailable_bytes [30m]) ) / avg_over_time( (node_memory_MemTotal_bytes [30m]) )  )",
-            "column_name": "memory_rate"
+            "metrics": ["node_memory_MemAvailable_bytes", "node_memory_MemTotal_bytes"]
         }
     ]
 }

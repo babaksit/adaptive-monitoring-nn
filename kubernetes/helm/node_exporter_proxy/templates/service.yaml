@@ -1,0 +1,15 @@
+## Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: node-exporter-proxy
+  labels:
+    app: node-exporter-proxy
+spec:
+  selector:
+    app: node-exporter-proxy
+  ports:
+    - name: metrics
+      protocol: TCP
+      port: {{ .Values.port }}
+      targetPort: {{ .Values.port }}

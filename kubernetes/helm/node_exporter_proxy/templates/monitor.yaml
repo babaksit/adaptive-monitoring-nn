@@ -1,0 +1,17 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: node-exporter-proxy
+  # namespace: default
+  labels:
+    app: node-exporter-proxy
+    release: prometheus
+
+spec:
+  selector:
+    matchLabels:
+      app: node-exporter-proxy
+  endpoints:
+  - port: metrics
+    # path: /metrics
+    interval: 1s

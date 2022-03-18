@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: node-exporter-proxy-deployment
+  labels:
+    app: node-exporter-proxy
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: node-exporter-proxy
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9393"
+      labels:
+        app: node-exporter-proxy
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: minikube-m02
+      containers:
+      - name: node-exporter-proxy
+        image: babaksit/node_exporter_proxy:v0.0.2
+        ports:
+          - containerPort: 9393
+        args: [ "--node-exporter-host", "{{ .Values.nodeExporterHost }}",
+                "--node-exporter-port", "{{ .Values.nodeExporterPort }}",
+                "--host", "{{ .Values.host }}",
+                "--port", "{{ .Values.port }}" ]
+

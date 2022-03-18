@@ -4,9 +4,10 @@ import logging
 import os
 import time
 from datetime import datetime, timedelta
-from typing import Union
+from typing import Union, Sequence
 
 import pandas as pd
+import requests
 from darts import TimeSeries
 
 from pipeline.models.forecast_models import TFTModel, NBeatsModel, ForecastModel
@@ -62,12 +63,18 @@ class Pipeline:
         self.model_dict = {"TFT": TFTModel(), "NBeats": NBeatsModel()}
         # self.create_forecast_model(self.config["model_name"])
         self.forecast_model = self.load_forecast_model(self.config["model_name"], self.config["model_path"])
-
+        self.keep_metric_url = self.config["keep_metric_url"]
+        self.clear_keep_list_url = self.config["clear_keep_list_url"]
         self.predict_length = self.config["predict_length"]
         self.fetching_duration = self.config["fetching_duration"]
         self.predict_frequency = self.config["predict_frequency"]
-        self.queries = [query['query'] for query in self.config["queries"]]
-        self.queries_column_names = [query['column_name'] for query in self.config["queries"]]
+        self.cols = []
+        self.col_query_dict = {}
+        self.create_query_dict(self.config["queries"])
+
+        # self.queries = [query['query'] for query in self.config["queries"]]
+        # self.queries_column_names = [query['column_name'] for query in self.config["queries"]]
+
         self.fetching_offset = self.config["fetching_offset"]
         self.query_delta_time = self.config["query_delta_time"]
         self.stop_pipeline = False
@@ -75,6 +82,12 @@ class Pipeline:
         self.prometheus_handler = PrometheusHandler(self.prometheus_url)
         self.date_format_str = '%Y-%m-%dT%H:%M:%SZ'
         self.save_new_queries_dir = "prometheus_new_queries"
+
+    def create_query_dict(self, queries):
+        for query in queries:
+            self.col_query_dict[query['column_name']] = {"query": query['query'],
+                                                         "metrics": query['metrics']}
+            self.cols.append(query['column_name'])
 
     def create_forecast_model(self, model_name) -> bool:
         """
@@ -113,6 +126,10 @@ class Pipeline:
     def predict(self, series):
         return self.forecast_model.predict(self.predict_length, series)
 
+    def get_cols_to_fetch(self, prediction: Union[TimeSeries, Sequence[TimeSeries]]):
+        metrics_to_predict = []
+        return metrics_to_predict
+
     def is_high_confidence(self, prediction):
         pass
 
@@ -143,54 +160,75 @@ class Pipeline:
     def shift_df(self, df):
         df.index = df.index.shift(freq=pd.Timedelta(self.query_delta_time))
 
-    def fetch_queries(self, duration_minutes, return_series=True) -> Union[pd.DataFrame,
-                                                                           TimeSeries]:
+    def keep_metrics(self, cols: list[str]):
+        #  we should fetch all metrics
+        if len(self.cols) == len(cols):
+            req = requests.get(self.clear_keep_list_url)
+            return self.prometheus_handler.change_fetching_state(enable=True)
+        success = True
+        for col in cols:
+            for metric in self.col_query_dict[col]["metrics"]:
+                req = requests.get(self.keep_metric_url + metric)
+                if req.status_code != 200:
+                    logging.error("couldn't keep metric " + metric)
+                    success = False
+        return success
 
-        self.prometheus_handler.change_fetching_state(enable=True)
+    def fetch_queries(self, duration_minutes, cols: list, return_series=True) -> Union[pd.DataFrame,
+                                                                                       TimeSeries]:
+        self.keep_metrics(cols)
         start_time = self.get_start_time()
         end_time = start_time + timedelta(minutes=duration_minutes)
         time.sleep(duration_minutes * 60)
+        queries = []
+        for col in cols:
+            queries += self.col_query_dict[col]["query"]
 
         # TODO check if we should disable fetching metrics after fetching metrics
         self.prometheus_handler.change_fetching_state(enable=False)
         df = self.prometheus_handler.fetch_queries(start_time.strftime(self.date_format_str),
                                                    end_time.strftime(self.date_format_str),
-                                                   self.queries,
-                                                   self.queries_column_names)
+                                                   queries,
+                                                   cols)
         self.shift_df(df)
-        self.save_new_queries_df(df, start_time, end_time)
+        # TODO check if it is needed to save the metrics, as prometheus already have it
+        # self.save_new_queries_df(df, start_time, end_time)
 
         # TODO check if this works
         if return_series:
             return TimeSeries.from_dataframe(df)
         return df
 
-    def run(self):
-        fetched_series = self.fetch_queries(self.fetching_duration)
-        series_to_predict = fetched_series
-        last_high_confidence_prediction_time: datetime = None
+    def wait_before_fetching(self, last_pred_time):
         time_diff_sec = 0.0
+        if last_pred_time:
+            time_diff_sec = (last_pred_time
+                             - datetime.now()).total_seconds()
+            # trigger start fetching metrics sooner,
+            # since it takes some time for prometheus to discover the enabled ServiceMonitor
+            time_diff_sec -= self.fetching_offset
+        if time_diff_sec > 0.0:
+            time.sleep(time_diff_sec)
+
+    def run(self):
+        fetched_series = self.fetch_queries(self.fetching_duration, self.cols)
+        series_to_predict = fetched_series
+        last_pred_time: datetime = None
         while not self.stop_pipeline:
             prediction = self.predict(series_to_predict)
-            if self.is_high_confidence(prediction):
-                last_high_confidence_prediction_time = prediction.end_time().to_pydatetime()
+            cols_to_fetch = self.get_cols_to_fetch(prediction)
+            # The prediction was high confidence for all the metrics
+            if not cols_to_fetch:
+                last_pred_time = prediction.end_time().to_pydatetime()
                 series_to_predict = self.get_series_to_predict(series_to_predict, prediction)
                 # crop series_to_predict to the length of fetching_duration/model input_chunk_length
                 # since greater would be useless and cause memory usage
                 if len(series_to_predict) > self.fetching_duration:
                     series_to_predict = series_to_predict[:-self.fetching_duration]
                 continue
-            if last_high_confidence_prediction_time:
-                time_diff_sec = (last_high_confidence_prediction_time
-                                 - datetime.now()).total_seconds()
-                # trigger start fetching metrics sooner,
-                # since it takes some time for prometheus to discover the enabled ServiceMonitor
-                time_diff_sec -= self.fetching_offset
 
-            if time_diff_sec > 0.0:
-                time.sleep(time_diff_sec)
-
-            series_to_predict = self.fetch_queries(self.predict_length)
+            self.wait_before_fetching(last_pred_time)
+            series_to_predict = self.fetch_queries(self.predict_length, cols_to_fetch)
 
 
 if __name__ == '__main__':
