@@ -6,10 +6,12 @@ import time
 from datetime import datetime, timedelta
 from typing import Union, Sequence
 
+import numpy as np
 import pandas as pd
 import requests
 from darts import TimeSeries
 
+from pipeline.dataset.dataset_loader import DatasetLoader
 from pipeline.models.forecast_models import TFTModel, NBeatsModel, ForecastModel
 from pipeline.prometheus.handler import PrometheusHandler
 
@@ -68,6 +70,7 @@ class Pipeline:
         self.predict_length = self.config["predict_length"]
         self.fetching_duration = self.config["fetching_duration"]
         self.predict_frequency = self.config["predict_frequency"]
+        self.std_threshold = self.config["std_threshold"]
         self.cols = []
         self.col_query_dict = {}
         self.create_query_dict(self.config["queries"])
@@ -89,28 +92,28 @@ class Pipeline:
                                                          "metrics": query['metrics']}
             self.cols.append(query['column_name'])
 
-    def create_forecast_model(self, model_name) -> bool:
-        """
-        Create forecast model
-
-        Parameters
-        ----------
-        model_name : str
-            Name of forecast model to create
-
-        Returns
-        -------
-        bool
-            If model creation was successful
-        """
-
-        try:
-            self.forecast_model = self.model_dict[model_name]
-        except KeyError:
-            logging.error("The model name could not be recognized")
-            return False
-        self.forecast_model.create_model()
-        return True
+    # def create_forecast_model(self, model_name) -> bool:
+    #     """
+    #     Create forecast model
+    #
+    #     Parameters
+    #     ----------
+    #     model_name : str
+    #         Name of forecast model to create
+    #
+    #     Returns
+    #     -------
+    #     bool
+    #         If model creation was successful
+    #     """
+    #
+    #     try:
+    #         self.forecast_model = self.model_dict[model_name]
+    #     except KeyError:
+    #         logging.error("The model name could not be recognized")
+    #         return False
+    #     self.forecast_model.create_model()
+    #     return True
 
     # def train(self):
     #     train, val, test = self.dataset_loader.get_train_val_test()
@@ -121,17 +124,23 @@ class Pipeline:
 
     @staticmethod
     def get_series_to_predict(first_series: TimeSeries, second_series: TimeSeries):
-        return first_series.append(second_series)
+        return DatasetLoader.series_append(first_series, second_series)
 
     def predict(self, series):
         return self.forecast_model.predict(self.predict_length, series)
 
     def get_cols_to_fetch(self, prediction: Union[TimeSeries, Sequence[TimeSeries]]):
         metrics_to_predict = []
-        return metrics_to_predict
 
-    def is_high_confidence(self, prediction):
-        pass
+        for i, component in enumerate(prediction.components):
+            pred = prediction.univariate_component(i)
+            pred = pred.all_values()  # Time X Components X samples
+            pred = np.squeeze(pred)  # Time X samples
+            std = np.mean(np.std(pred, axis=1))
+            if std > self.std_threshold:
+                metrics_to_predict += self.col_query_dict[component]["metrics"]
+
+        return metrics_to_predict
 
     def save_new_queries_df(self, df, start_time, end_time):
 
@@ -161,10 +170,15 @@ class Pipeline:
         df.index = df.index.shift(freq=pd.Timedelta(self.query_delta_time))
 
     def keep_metrics(self, cols: list[str]):
+
         #  we should fetch all metrics
         if len(self.cols) == len(cols):
             req = requests.get(self.clear_keep_list_url)
-            return self.prometheus_handler.change_fetching_state(enable=True)
+            if req.status_code != 200:
+                logging.error("couldn't clear_keep_list")
+                self.prometheus_handler.change_fetching_state(enable=True)
+                return False
+            return True
         success = True
         for col in cols:
             for metric in self.col_query_dict[col]["metrics"]:

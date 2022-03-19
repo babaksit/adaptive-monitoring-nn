@@ -6,6 +6,7 @@
     "fetching_duration": 30,
     "time_col": "Time",
     "frequency": "1min",
+    "std_threshold": 0.1,
     "augment": true,
     "keep_metric_url": "http://127.0.0.1:9393/keep_metric?metric=",
     "clear_keep_list_url": "http://127.0.0.1:9393/clear_keep_list",

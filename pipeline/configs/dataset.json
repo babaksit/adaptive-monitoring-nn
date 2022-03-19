@@ -1,6 +1,6 @@
 {
-    "start_time": "2022-03-17T14:32:00Z",
-    "end_time": "2022-03-17T17:32:00Z",
+    "start_time": "2022-03-17T20:40:00Z",
+    "end_time": "2022-03-18T20:40:00Z",
     "save_dir": "../data",
     "step": "1s",
     "prometheus_url":"http://127.0.0.1:9090/" ,
