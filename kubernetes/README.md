@@ -36,7 +36,9 @@ Follow instruction in https://minikube.sigs.k8s.io/docs/start/
     helm install  workload-sim helm/workload_sim/. --set rabbitmqHost=$(kubectl get service/rabbitmq -o jsonpath='{.spec.clusterIP}')
  
 ## 6. Run Node Exporter Proxy
+
     helm install  node-exporter-proxy helm/node_exporter_proxy/. --set nodeExporterHost=$(kubectl get service/prometheus-prometheus-node-exporter -o jsonpath='{.spec.clusterIP}')
+
 ## 6. Run Scenario
 
     conda activate th

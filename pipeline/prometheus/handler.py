@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 import requests
 from dateutil import rrule
-from kubernetes import client
+from kubernetes import client, config
 from prometheus_pandas import query
 import pandas as pd
 
@@ -102,6 +102,7 @@ class PrometheusHandler:
                               plural="servicemonitors",
                               name="prometheus-prometheus-node-exporter",
                               ) -> bool:
+        config.load_kube_config()
         api_custom = client.CustomObjectsApi()
         try:
             conf = api_custom.get_namespaced_custom_object(
@@ -116,10 +117,10 @@ class PrometheusHandler:
             return False
 
         if enable:
-            conf["spec"]["selector"]["matchLabels"]["release"] = "prometheus"
+            conf['metadata']['labels']['release'] = "prometheus"
         else:
-            # setting to a random string, so prometheus do not scrape it
-            conf["spec"]["selector"]["matchLabels"]["release"] = "disable"
+            # setting to a random string, so the prometheus does not scrape it
+            conf['metadata']['labels']['release'] = "disable"
 
         try:
             api_custom.patch_namespaced_custom_object(

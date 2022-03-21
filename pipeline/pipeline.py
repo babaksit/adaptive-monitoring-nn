@@ -188,12 +188,12 @@ class Pipeline:
                     success = False
         return success
 
-    def fetch_queries(self, duration_minutes, cols: list, return_series=True) -> Union[pd.DataFrame,
+    def fetch_queries(self, duration_seconds, cols: list, return_series=True) -> Union[pd.DataFrame,
                                                                                        TimeSeries]:
         self.keep_metrics(cols)
         start_time = self.get_start_time()
-        end_time = start_time + timedelta(minutes=duration_minutes)
-        time.sleep(duration_minutes * 60)
+        end_time = start_time + timedelta(minutes=duration_seconds)
+        time.sleep(duration_seconds)
         queries = []
         for col in cols:
             queries += self.col_query_dict[col]["query"]
@@ -225,8 +225,7 @@ class Pipeline:
             time.sleep(time_diff_sec)
 
     def run(self):
-        fetched_series = self.fetch_queries(self.fetching_duration, self.cols)
-        series_to_predict = fetched_series
+        series_to_predict = self.fetch_queries(self.fetching_duration, self.cols)
         last_pred_time: datetime = None
         while not self.stop_pipeline:
             prediction = self.predict(series_to_predict)
@@ -238,7 +237,7 @@ class Pipeline:
                 # crop series_to_predict to the length of fetching_duration/model input_chunk_length
                 # since greater would be useless and cause memory usage
                 if len(series_to_predict) > self.fetching_duration:
-                    series_to_predict = series_to_predict[:-self.fetching_duration]
+                    series_to_predict = series_to_predict[-self.fetching_duration:]
                 continue
 
             self.wait_before_fetching(last_pred_time)

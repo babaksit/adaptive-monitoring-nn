@@ -22,7 +22,7 @@ spec:
         kubernetes.io/hostname: minikube-m02
       containers:
       - name: node-exporter-proxy
-        image: babaksit/node_exporter_proxy:v0.0.2
+        image: babaksit/node_exporter_proxy:v0.0.4
         ports:
           - containerPort: 9393
         args: [ "--node-exporter-host", "{{ .Values.nodeExporterHost }}",

@@ -10,15 +10,36 @@ app = Flask(__name__)
 args = None
 node_exporter_metrics_url = None
 keep_metrics = set()
+drop_metrics = set()
+
 
 def get_html(text):
     return '<pre style="word-wrap: break-word; white-space: pre-wrap;">' + text + "</pre>"
 
-def is_in_keep_metrics(line):
-    for keep_metric in keep_metrics:
-        if keep_metric in line:
+
+def is_in(line, metric_list):
+    for metric in metric_list:
+        if metric in line:
             return True
     return False
+
+
+def is_in_keep_metrics(line):
+    return is_in(line, keep_metrics)
+
+
+def is_in_drop_metrics(line):
+    return is_in(line, drop_metrics)
+
+
+@app.route('/drop_metric')
+def drop_metric():
+    metric = request.args.get('metric')
+    if metric:
+        drop_metrics.add(metric)
+        return "Added " + str(metric) + " to drop metrics list"
+    return "Metric was None", 400
+
 
 @app.route('/keep_metric')
 def keep_metric():
@@ -28,28 +49,45 @@ def keep_metric():
         return "Added " + str(metric) + " to keep metrics list"
     return "Metric was None", 400
 
+
+@app.route('/clear_drop_list')
+def clear_drop_list():
+    drop_metrics.clear()
+    return "Cleared drop list"
+
+
 @app.route('/clear_keep_list')
 def clear_keep_list():
     keep_metrics.clear()
     return "Cleared Keep list"
 
+
 @app.route('/metrics')
 def metrics():
-    metrics = requests.get(node_exporter_metrics_url).text
-    if not keep_metrics:
-        return metrics
-        # return get_html(metrics)
+    metric_list = requests.get(node_exporter_metrics_url).text
+    if not keep_metrics and not drop_metrics:
+        return metric_list
 
-    lines = metrics.splitlines()
+    if not keep_metrics:
+        lines = metric_list.splitlines()
+        res = []
+
+        for line in lines:
+            if not is_in_drop_metrics(line):
+                res.append(line)
+
+        res = "\n".join(res)
+        return res
+
+    lines = metric_list.splitlines()
     res = []
 
     for line in lines:
-        if is_in_keep_metrics(line):
+        if is_in_keep_metrics(line) and not is_in_drop_metrics(line):
             res.append(line)
 
     res = "\n".join(res)
     return res
-    # return get_html(res)
 
 
 if __name__ == '__main__':
