@@ -192,7 +192,7 @@ class Pipeline:
                                                                                        TimeSeries]:
         self.keep_metrics(cols)
         start_time = self.get_start_time()
-        end_time = start_time + timedelta(minutes=duration_seconds)
+        end_time = start_time + timedelta(seconds=duration_seconds)
         time.sleep(duration_seconds)
         queries = []
         for col in cols:

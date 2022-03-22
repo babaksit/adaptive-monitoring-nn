@@ -61,7 +61,7 @@ class PrometheusHandler:
                       columns: list = [],
                       step: str = "1s"
                       ):
-
+        result= None
         chunked_datetime = self.chunk_datetime(start_time_str, end_time_str)
         df_list = []
         for c, query_str in enumerate(queries):
