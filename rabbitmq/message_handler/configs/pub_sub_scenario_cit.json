@@ -8,7 +8,7 @@
   "queue_name" : "test",
   "exchange" : "logs",
   "exchange_type" : "fanout",
-  "dataset_path": "minimal_data/IoT_500_1000_1min_12times.csv",
+  "dataset_path": "minimal_data/cpu_memory_disk_1s_22_march.csv",
   "time_column_name": "second",
   "value_column_name": "vehicleCount"
 }
