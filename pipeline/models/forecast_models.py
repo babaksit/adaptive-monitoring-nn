@@ -114,6 +114,9 @@ class ForecastModel:
 
         return pred
 
+    def load_model(self, path):
+        raise NotImplementedError
+
 
 class TFTModel(ForecastModel):
 
@@ -172,6 +175,10 @@ class TFTModel(ForecastModel):
             log_tensorboard=self.log_tensorboard
         )
 
+    def load_model(self, path):
+        self.model = models.TFTModel().load_model(path)
+        return self.model
+
 
 class NBeatsModel(ForecastModel):
     def __init__(self, input_length: int = 120, predict_length: int = 60,
@@ -228,3 +235,7 @@ class NBeatsModel(ForecastModel):
             save_checkpoints=self.save_checkpoints,
             log_tensorboard=self.log_tensorboard
         )
+
+    def load_model(self, path):
+        self.model = models.NBEATSModel().load_model(path)
+        return self.model

@@ -1,0 +1,15 @@
+## Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: csv-exporter
+  labels:
+    app: csv-exporter
+spec:
+  selector:
+    app: csv-exporter
+  ports:
+    - name: metrics
+      protocol: TCP
+      port: {{ .Values.port }}
+      targetPort: {{ .Values.port }}

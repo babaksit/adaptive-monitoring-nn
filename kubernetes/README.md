@@ -39,6 +39,10 @@ Follow instruction in https://minikube.sigs.k8s.io/docs/start/
 
     helm install  node-exporter-proxy helm/node_exporter_proxy/. --set nodeExporterHost=$(kubectl get service/prometheus-prometheus-node-exporter -o jsonpath='{.spec.clusterIP}')
 
+## 7. Run Node CSV Exporter
+
+    helm install  csv-exporter helm/csv_exporter/. 
+
 ## 6. Run Scenario
 
     conda activate th

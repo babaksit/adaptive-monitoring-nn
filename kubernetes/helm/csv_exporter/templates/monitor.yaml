@@ -1,0 +1,15 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: csv-exporter
+  labels:
+    app: csv-exporter
+    release: prometheus
+
+spec:
+  selector:
+    matchLabels:
+      app: csv-exporter
+  endpoints:
+  - port: metrics
+    interval: 1s

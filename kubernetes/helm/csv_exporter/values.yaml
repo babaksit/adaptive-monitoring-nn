@@ -1,0 +1,5 @@
+csvPath: "https://raw.githubusercontent.com/babaksit/public_data/main/adaptive_monitoring_nn/cpu_memory_rate.csv"
+timeInterval: 1
+host : "0.0.0.0"
+port : 9393
+

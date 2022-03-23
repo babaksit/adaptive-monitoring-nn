@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: csv-exporter-deployment
+  labels:
+    app: csv-exporter
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: csv-exporter
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9393"
+      labels:
+        app: csv-exporter
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: minikube-m02
+      containers:
+      - name: csv-exporter
+        image: babaksit/csv_exporter:v0.0.1
+        ports:
+          - containerPort: 9393
+        args: [ "--time-interval", "{{ .Values.timeInterval }}",
+                "--csv-path", "{{ .Values.csvPath }}",
+                "--host", "{{ .Values.host }}",
+                "--port", "{{ .Values.port }}" ]
+

@@ -11,7 +11,9 @@ if __name__ == '__main__':
 
     # Generate some requests.
     while True:
-        current_requests.inc()
+        # current_requests.inc()
+        # current_requests.dec()
+        current_requests.set(5.6)
         time.sleep(1)
 
 

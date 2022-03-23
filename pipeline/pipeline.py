@@ -4,7 +4,7 @@ import logging
 import os
 import time
 from datetime import datetime, timedelta
-from typing import Union, Sequence
+from typing import Union, Sequence, Dict
 
 import numpy as np
 import pandas as pd
@@ -13,6 +13,7 @@ from darts import TimeSeries
 
 from pipeline.dataset.dataset_loader import DatasetLoader
 from pipeline.models.forecast_models import TFTModel, NBeatsModel, ForecastModel
+from pipeline.prometheus.exporter_api_handler import ExporterApi
 from pipeline.prometheus.handler import PrometheusHandler
 
 
@@ -21,6 +22,7 @@ class Pipeline:
     Pipeline class
 
     """
+    model_dict: Dict[str, Union[NBeatsModel, TFTModel]]
     forecast_model: ForecastModel
 
     def __init__(self, config_path: str):
@@ -64,8 +66,13 @@ class Pipeline:
         #                                     )
         self.model_dict = {"TFT": TFTModel(), "NBeats": NBeatsModel()}
         # self.create_forecast_model(self.config["model_name"])
-        self.forecast_model = self.load_forecast_model(self.config["model_name"], self.config["model_path"])
+        self.forecast_model = None
+        self.load_forecast_model()
+        self.prometheus_url = self.config["prometheus_url"]
+        self.prometheus_handler = PrometheusHandler(self.prometheus_url)
+        self.drop_metrics = self.config["drop_metrics"]
         self.keep_metric_url = self.config["keep_metric_url"]
+        self.drop_metric_url = self.config["drop_metric_url"]
         self.clear_keep_list_url = self.config["clear_keep_list_url"]
         self.predict_length = self.config["predict_length"]
         self.fetching_duration = self.config["fetching_duration"]
@@ -74,53 +81,28 @@ class Pipeline:
         self.cols = []
         self.col_query_dict = {}
         self.create_query_dict(self.config["queries"])
-
+        self.exporter_api = ExporterApi(col_query_dict=self.col_query_dict,
+                                        clear_keep_list_url=self.clear_keep_list_url,
+                                        keep_metric_url=self.keep_metric_url)
         # self.queries = [query['query'] for query in self.config["queries"]]
         # self.queries_column_names = [query['column_name'] for query in self.config["queries"]]
-
+        self.exporter_api.drop_metrics(self.config["drop_metrics"])
         self.fetching_offset = self.config["fetching_offset"]
         self.query_delta_time = self.config["query_delta_time"]
         self.stop_pipeline = False
-        self.prometheus_url = self.config["prometheus_url"]
-        self.prometheus_handler = PrometheusHandler(self.prometheus_url)
+
         self.date_format_str = '%Y-%m-%dT%H:%M:%SZ'
         self.save_new_queries_dir = "prometheus_new_queries"
+
+    def load_forecast_model(self):
+        model = self.config["model_name"]
+        self.forecast_model = model.load_model(self.config["model_path"])
 
     def create_query_dict(self, queries):
         for query in queries:
             self.col_query_dict[query['column_name']] = {"query": query['query'],
                                                          "metrics": query['metrics']}
             self.cols.append(query['column_name'])
-
-    # def create_forecast_model(self, model_name) -> bool:
-    #     """
-    #     Create forecast model
-    #
-    #     Parameters
-    #     ----------
-    #     model_name : str
-    #         Name of forecast model to create
-    #
-    #     Returns
-    #     -------
-    #     bool
-    #         If model creation was successful
-    #     """
-    #
-    #     try:
-    #         self.forecast_model = self.model_dict[model_name]
-    #     except KeyError:
-    #         logging.error("The model name could not be recognized")
-    #         return False
-    #     self.forecast_model.create_model()
-    #     return True
-
-    # def train(self):
-    #     train, val, test = self.dataset_loader.get_train_val_test()
-    #     self.forecast_model.fit(train, val)
-
-    def load_forecast_model(self, model_name, model_path):
-        pass
 
     @staticmethod
     def get_series_to_predict(first_series: TimeSeries, second_series: TimeSeries):
@@ -169,28 +151,11 @@ class Pipeline:
     def shift_df(self, df):
         df.index = df.index.shift(freq=pd.Timedelta(self.query_delta_time))
 
-    def keep_metrics(self, cols: list[str]):
-
-        #  we should fetch all metrics
-        if len(self.cols) == len(cols):
-            req = requests.get(self.clear_keep_list_url)
-            if req.status_code != 200:
-                logging.error("couldn't clear_keep_list")
-                self.prometheus_handler.change_fetching_state(enable=True)
-                return False
-            return True
-        success = True
-        for col in cols:
-            for metric in self.col_query_dict[col]["metrics"]:
-                req = requests.get(self.keep_metric_url + metric)
-                if req.status_code != 200:
-                    logging.error("couldn't keep metric " + metric)
-                    success = False
-        return success
-
     def fetch_queries(self, duration_seconds, cols: list, return_series=True) -> Union[pd.DataFrame,
                                                                                        TimeSeries]:
-        self.keep_metrics(cols)
+
+        self.prometheus_handler.change_fetching_state(enable=True)
+        self.exporter_api.keep_metrics(cols, len(self.cols) == len(cols))
         start_time = self.get_start_time()
         end_time = start_time + timedelta(seconds=duration_seconds)
         time.sleep(duration_seconds)
