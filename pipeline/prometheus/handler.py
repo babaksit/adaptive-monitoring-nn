@@ -59,6 +59,7 @@ class PrometheusHandler:
                       end_time_str: str,
                       queries: list,
                       columns: list = [],
+                      single_column_query: bool = True,
                       step: str = "1s"
                       ):
         result= None
@@ -73,15 +74,17 @@ class PrometheusHandler:
                 except RuntimeError as re:
                     logging.error(str(re))
                     continue
-                if len(df.columns) != 1:
+                if single_column_query and len(df.columns) != 1:
                     logging.error("Query: " + query_str + " has more than one value")
                     continue
 
-                if columns:
-                    df.rename(columns={df.columns[0]: columns[c]}, inplace=True)
-                else:
-                    df.rename(columns={df.columns[0]: query}, inplace=True)
+                if single_column_query:
+                    if columns:
+                        df.rename(columns={df.columns[0]: columns[c]}, inplace=True)
+                    else:
+                        df.rename(columns={df.columns[0]: query}, inplace=True)
                 chunked_df_list.append(df)
+
             try:
                 df_list.append(pd.concat(chunked_df_list, axis=0))
             except Exception as e:
