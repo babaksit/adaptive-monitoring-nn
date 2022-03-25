@@ -1,0 +1,27 @@
+{
+    "start_time": "2022-03-23T17:00:00Z",
+    "end_time": "2022-03-23T19:51:00Z",
+    "save_dir": "../data",
+    "step": "1s",
+    "prometheus_url":"http://127.0.0.1:9090/" ,
+    "drop_labels": ["container=", "pod=", "endpoint=",
+                    "instance=", "job=", "namespace=", "service="] ,
+    "queries":
+    [
+        {
+            "query" : "node_cpu_seconds_total{mode='idle'}"
+        },
+        {
+            "query" : "node_memory_MemAvailable_bytes"
+        },
+        {
+            "query" : "node_memory_MemTotal_bytes"
+        },
+        {
+            "query" : "node_disk_read_bytes_total{device='dm-0'}"
+        },
+        {
+            "query" : "node_disk_written_bytes_total{device='dm-0'}"
+        }
+    ]
+}

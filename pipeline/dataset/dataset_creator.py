@@ -4,7 +4,7 @@ import os
 import time
 from pathlib import Path
 import pandas as pd
-
+import re
 from pipeline.prometheus.handler import PrometheusHandler
 
 
@@ -69,8 +69,62 @@ class DatasetCreator:
             self.df.to_csv(save_path)
         return self.df
 
+    @staticmethod
+    def drop_labels(df: pd.DataFrame, drop_labels: tuple):
+        if not drop_labels:
+            return
+        columns = df.columns
+        new_columns = []
+        for col in columns:
+            labels = col[col.find('{') + len('{'):col.rfind('}')]
+            labels = labels.split(",")
+            new_label = []
+            for label in labels:
+                if label.startswith(drop_labels):
+                    continue
+                new_label.append(label)
+
+            if new_label:
+                sub_tmp = '{' + ",".join(new_label) + '}'
+            else:
+                sub_tmp = ""
+            new_columns.append(re.sub(r'\{.*?\}', sub_tmp, col))
+        df.columns = new_columns
+
+    def create_csv_exporter_df(self, config_path: str, save: bool = True) -> pd.DataFrame:
+
+        with open(config_path) as f:
+            self.config = json.load(f)
+
+        start_time_str = self.config["start_time"]
+        end_time_str = self.config["end_time"]
+        save_dir = self.config["save_dir"]
+        step = self.config["step"]
+        prometheus_url = self.config["prometheus_url"]
+        queries = [query['query'] for query in self.config["queries"]]
+
+        self.prometheus_handler = PrometheusHandler(prometheus_url)
+
+        # prometheus unique save dir
+        save_time = str(time.ctime()) + ".csv"
+        Path(save_dir).mkdir(parents=True, exist_ok=True)
+        # final save dir
+        save_path = os.path.join(save_dir, save_time)
+
+        self.df = self.prometheus_handler.fetch_queries(start_time_str=start_time_str,
+                                                        end_time_str=end_time_str,
+                                                        queries=queries,
+                                                        single_column_query=False,
+                                                        step=step)
+
+        self.drop_labels(self.df, tuple(self.config["drop_labels"]))
+
+        self.df.to_csv(save_path)
+
 
 if __name__ == '__main__':
     logging.basicConfig(filename='dataset_creator.log', level=logging.DEBUG)
     dc = DatasetCreator()
-    dc.create_prometheus_queries_df("/home/bsi/adaptive-monitoring-nn/pipeline/configs/dataset.json")
+    # dc.create_prometheus_queries_df("/home/bsi/adaptive-monitoring-nn/pipeline/configs/dataset.json")
+    dc.create_csv_exporter_df("/home/bsi/adaptive-monitoring-nn/pipeline/"
+                              "configs/csv_exporter_dataset.json")
