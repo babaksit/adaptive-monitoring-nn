@@ -118,7 +118,6 @@ class DatasetCreator:
                                                         step=step)
 
         self.drop_labels(self.df, tuple(self.config["drop_labels"]))
-
         self.df.to_csv(save_path)
 
 

@@ -67,8 +67,7 @@ class CSVExporter:
         self.gauges_col_val = {}
         self.col_gauges = {}
         self.time_interval_seconds = time_interval_seconds
-        self.df = pd.read_csv(csv_path, escapechar='"')
-        self.df.columns = self.df.columns.str.replace('\\', '"')
+        self.df = pd.read_csv(csv_path, index_col=0)
         self.init_gauges()
         self.stop_run = False
 
@@ -125,7 +124,7 @@ if __name__ == '__main__':
                         datefmt='%Y-%m-%d %H:%M:%S')
     parser = argparse.ArgumentParser(description="CSV File Exporter")
     parser.add_argument('--csv-path', type=str,
-                        help='Path to csv file', default="cpu_memory_rate.csv")
+                        help='Path to csv file', default="Fri Mar 25 14:45:48 2022.csv")
     parser.add_argument('--time-interval', type=int,
                         help='Time interval in seconds', default=1)
     parser.add_argument('--host', type=str,

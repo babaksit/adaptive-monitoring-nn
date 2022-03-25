@@ -5,7 +5,8 @@
     "step": "1s",
     "prometheus_url":"http://127.0.0.1:9090/" ,
     "drop_labels": ["container=", "pod=", "endpoint=",
-                    "instance=", "job=", "namespace=", "service="] ,
+                    "instance=", "job=", "namespace=",
+                    "service="] ,
     "queries":
     [
         {
