@@ -6,8 +6,9 @@ from typing import List
 
 class ExporterApi:
     def __init__(self, col_query_dict, clear_keep_list_url,
-                 keep_metric_url, drop_metric_url):
+                 keep_metric_url, drop_metric_url, start_csv_exporter_url):
 
+        self.start_csv_exporter_url = start_csv_exporter_url
         self.drop_metric_url = drop_metric_url
         self.keep_metric_url = keep_metric_url
         self.clear_keep_list_url = clear_keep_list_url
@@ -19,6 +20,15 @@ class ExporterApi:
         if req.status_code != 200:
             logging.error("couldn't clear_keep_list")
             return False
+        return True
+
+    def start_csv_exporter(self):
+        req = requests.get(self.start_csv_exporter_url)
+        logging.debug("starting csv_exporter")
+        if req.status_code != 200:
+            logging.error("couldn't start csv_exporter")
+            return False
+        logging.debug("started csv_exporter")
         return True
 
     def drop_metrics(self, metrics):

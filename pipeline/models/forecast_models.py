@@ -203,7 +203,7 @@ class NBeatsModel(ForecastModel):
             Batch Size
 
         """
-        super().__init__(self, input_length, predict_length,
+        super().__init__(input_length, predict_length,
                          quantiles, n_epochs, batch_size)
 
     def create_model(self):
@@ -238,4 +238,82 @@ class NBeatsModel(ForecastModel):
 
     def load_model(self, path):
         self.model = models.NBEATSModel().load_model(path)
+        return self.model
+
+
+class LSTMModel(ForecastModel):
+    def __init__(self, input_length: int = 300, predict_length: int = 600,
+                 quantiles: list = [0.1, 0.5, 0.9],
+                 n_epochs: int = 200, batch_size: int = 128
+                 ):
+        """
+
+        Parameters
+        ----------
+        input_length : int
+            Input/Window length
+        predict_length : int
+            Prediction length
+        quantiles : list
+            Quantiles for loss function
+        n_epochs : int
+            Number of epochs
+        n_epochs : int
+            Number of epochs
+        batch_size: int
+            Batch Size
+
+        """
+        super().__init__(input_length=input_length, predict_length=predict_length,
+                         quantiles=quantiles, n_epochs=n_epochs, batch_size=batch_size)
+
+    @staticmethod
+    def generate_encoders(idxs):
+        days = ((idxs.second + idxs.minute * 60 + idxs.hour * 60 * 60 + idxs.dayofweek * 24 * 60 * 60) // (24 * 60)) % 7
+        encoders = []
+        for day in days:
+            if day == 0:
+                encoders.append(1)
+            elif day == 1 or day == 2 or day == 3 or day == 4:
+                encoders.append(2)
+            elif day == 5 or day == 6:
+                encoders.append(3)
+        return encoders
+
+    def create_model(self):
+        """
+        Create NBeats model
+
+        Returns
+        -------
+
+        """
+
+        self.model = models.BlockRNNModel(
+            model="LSTM",
+            input_chunk_length=self.input_length,
+            output_chunk_length=self.predict_length,
+            n_epochs=self.n_epochs,
+            batch_size=self.batch_size,
+            hidden_size=25,
+            n_rnn_layers=2,
+            dropout=0.1,
+            add_encoders={
+                'cyclic': {'past': ['dayofweek', 'hour', 'minute', 'second']},
+                'custom': {'past': [self.generate_encoders]},
+                'transformer': Scaler()
+            },
+            likelihood=QuantileRegression(
+                quantiles=self.quantiles
+            ),
+            optimizer_kwargs={"lr": 1e-3},
+            random_state=self.random_state,
+            work_dir=self.log_dir,
+            torch_device_str=self.torch_device_str,
+            save_checkpoints=self.save_checkpoints,
+            log_tensorboard=self.log_tensorboard
+        )
+
+    def load_model(self, path):
+        self.model = models.BlockRNNModel().load_model(path)
         return self.model

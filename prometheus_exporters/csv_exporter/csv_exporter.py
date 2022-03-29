@@ -124,11 +124,11 @@ if __name__ == '__main__':
                         datefmt='%Y-%m-%d %H:%M:%S')
     parser = argparse.ArgumentParser(description="CSV File Exporter")
     parser.add_argument('--csv-path', type=str,
-                        help='Path to csv file', default="Fri Mar 25 14:45:48 2022.csv")
+                        help='Path to csv file')
     parser.add_argument('--time-interval', type=int,
                         help='Time interval in seconds', default=1)
     parser.add_argument('--host', type=str,
-                        help='host', default="127.0.0.1")
+                        help='host', default="0.0.0.0")
     parser.add_argument('--port', type=int,
                         help='port', default=9393)
 

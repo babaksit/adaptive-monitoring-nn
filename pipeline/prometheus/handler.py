@@ -105,6 +105,7 @@ class PrometheusHandler:
                               plural="servicemonitors",
                               name="prometheus-prometheus-node-exporter",
                               ) -> bool:
+        logging.debug("Changing fetching state to:" + str(enable))
         config.load_kube_config()
         api_custom = client.CustomObjectsApi()
         try:
@@ -141,4 +142,7 @@ class PrometheusHandler:
         if r.status_code != 200:
             logging.error("Reloading the prometheus config was not successful: " + str(r.status_code))
             return False
+
+        logging.debug("Changed fetching state to:" + str(enable))
+
         return True

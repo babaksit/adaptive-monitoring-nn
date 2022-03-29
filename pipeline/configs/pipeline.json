@@ -1,16 +1,18 @@
 {
-    "model_name": "TFT",
-    "model_path": "TFT.pth.tar",
+    "model_name": "LSTM",
+    "model_path": "saved_models/lstm_300_600.pth.tar",
     "dataset_path": "data/Thu Mar 10 15:34:00 2022.csv",
-    "predict_length": 5,
-    "fetching_duration": 30,
+    "prediction_queries_save_dir": "data/prediction&queries/",
+    "predict_length": 600,
+    "fetching_duration": 300,
     "time_col": "Time",
-    "frequency": "1min",
+    "frequency": "1s",
     "std_threshold": 0.1,
     "augment": true,
     "keep_metric_url": "http://127.0.0.1:9393/keep_metric?metric=",
     "clear_keep_list_url": "http://127.0.0.1:9393/clear_keep_list",
     "drop_metric_url": "http://127.0.0.1:9393/drop_metric?metric=",
+    "start_csv_exporter_url": "http://127.0.0.1:9393/start_csv_exporter",
     "fetching_offset": "15",
     "query_delta_time": "-3 days 5 hours 26 min 10 seconds",
     "prometheus_url":"http://127.0.0.1:9090/" ,
@@ -33,10 +35,5 @@
             "column_name": "write_bytes_rate"
         }
     ],
-    "drop_metrics": [
-        "mode=\"nice\"", "mode=\"irq\"", "mode=\"iowait\"",
-        "mode=\"softirq\"", "mode=\"steal\"", "mode=\"system\"",
-        "mode=\"user\"",
-        "node_cpu_scaling_frequency_min_hertz"
-    ]
+    "drop_metrics": ["None"]
 }
