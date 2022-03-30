@@ -274,6 +274,8 @@ class Pipeline:
 
         prediction_components = prediction.components.to_list()
         fetched_series_components = fetched_series.components.to_list()
+        logging.debug("prediction_components: " + str(prediction_components))
+        logging.debug("fetched_series_components: " + str(fetched_series_components))
         diff_components = list(set(prediction_components) - set(fetched_series_components))
         prediction_diff_series = prediction[diff_components].slice(fetched_series.start_time(),
                                                                    fetched_series.end_time())
@@ -290,6 +292,7 @@ class Pipeline:
             cols_to_fetch = self.get_cols_to_fetch(prediction)
             # The prediction was high confidence for all the metrics
             if not cols_to_fetch:
+                prediction = self.predict(series_to_predict, single_pred=True, save_df=False)
                 last_pred_time = prediction.end_time().to_pydatetime()
                 series_to_predict = self.get_series_to_predict(series_to_predict, prediction)
                 # crop series_to_predict to the length of fetching_duration/model input_chunk_length
