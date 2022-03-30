@@ -1,7 +1,6 @@
 {
     "model_name": "LSTM",
     "model_path": "saved_models/lstm_300_600.pth.tar",
-    "dataset_path": "data/Thu Mar 10 15:34:00 2022.csv",
     "prediction_queries_save_dir": "data/prediction&queries/",
     "predict_length": 600,
     "fetching_duration": 300,
@@ -14,25 +13,29 @@
     "drop_metric_url": "http://127.0.0.1:9393/drop_metric?metric=",
     "start_csv_exporter_url": "http://127.0.0.1:9393/start_csv_exporter",
     "fetching_offset": "15",
-    "query_delta_time": "-3 days 5 hours 26 min 10 seconds",
+    "query_delta_time": "0 days 0 hours 0 min 0 seconds",
     "prometheus_url":"http://127.0.0.1:9090/" ,
     "queries":
     [
         {
-            "query" : "(100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[1m])) * 100))",
-            "column_name" : "cpu_rate"
+            "query" : "(100 - (avg by (instance) (rate(node_cpu_seconds_total{mode='idle'}[1m])) * 100))",
+            "column_name" : "cpu_rate",
+            "metrics": ["node_cpu_seconds_total"]
         },
         {
             "query": "100 * (1 - avg_over_time((node_memory_MemAvailable_bytes [1m])) / avg_over_time((node_memory_MemTotal_bytes [1m])))",
-            "column_name": "memory_rate"
+            "column_name": "memory_rate",
+            "metrics": ["node_memory_MemAvailable_bytes", "node_memory_MemTotal_bytes"]
         },
         {
-            "query": "rate(node_disk_read_bytes_total{device=\"dm-0\"}[1m])",
-            "column_name": "read_bytes_rate"
+            "query": "rate(node_disk_read_bytes_total{device='dm-0'}[1m])",
+            "column_name": "read_bytes_rate",
+            "metrics": ["node_disk_read_bytes_total"]
         },
         {
-            "query": "rate(node_disk_written_bytes_total{device=\"dm-0\"}[1m])",
-            "column_name": "write_bytes_rate"
+            "query": "rate(node_disk_written_bytes_total{device='dm-0'}[1m])",
+            "column_name": "write_bytes_rate",
+            "metrics": ["node_disk_written_bytes_total"]
         }
     ],
     "drop_metrics": ["None"]

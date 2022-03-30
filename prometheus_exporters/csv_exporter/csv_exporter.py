@@ -15,13 +15,19 @@ keep_metrics = set()
 drop_metrics = set()
 csv_exporter = None
 csv_exporter_thread = None
-
+thread_running = False
 
 @app.route('/start_csv_exporter')
 def start_csv_exporter():
     global csv_exporter_thread
+    global thread_running
+    if thread_running:
+        csv_exporter.restart = True
+        return "Restarted csv_exporter"
+
     csv_exporter_thread = Thread(target=csv_exporter.run)
     csv_exporter_thread.start()
+    thread_running = True
     return "started csv_exporter"
 
 
@@ -70,6 +76,7 @@ class CSVExporter:
         self.df = pd.read_csv(csv_path, index_col=0)
         self.init_gauges()
         self.stop_run = False
+        self.restart = False
 
     def init_gauges(self):
         for column in self.df.columns:
@@ -114,6 +121,8 @@ class CSVExporter:
             time_diff = self.time_interval_seconds - (time.time() - now)
             if time_diff > 0.00:
                 time.sleep(time_diff)
+            if self.restart:
+                self.restart = False
             if self.stop_run:
                 break
 

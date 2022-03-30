@@ -1,4 +1,5 @@
 import logging
+import time
 from datetime import datetime, timedelta
 
 import requests
@@ -62,7 +63,7 @@ class PrometheusHandler:
                       single_column_query: bool = True,
                       step: str = "1s"
                       ):
-        result= None
+        result = None
         chunked_datetime = self.chunk_datetime(start_time_str, end_time_str)
         df_list = []
         for c, query_str in enumerate(queries):
@@ -74,10 +75,12 @@ class PrometheusHandler:
                 except RuntimeError as re:
                     logging.error(str(re))
                     continue
-                if single_column_query and len(df.columns) != 1:
-                    logging.error("Query: " + query_str + " has more than one value")
+                if len(df.columns) == 0:
+                    logging.error("Query: " + query_str + " returned no value:")
                     continue
-
+                if single_column_query and len(df.columns) != 1:
+                    logging.error("Query: " + query_str + " has more than one value:" + str(df.columns))
+                    continue
                 if single_column_query:
                     if columns:
                         df.rename(columns={df.columns[0]: columns[c]}, inplace=True)
@@ -97,13 +100,35 @@ class PrometheusHandler:
 
         return result
 
+    def check_target_exits(self, target_service_name: str, num_try: int = 60):
+
+        for i in range(num_try):
+            targets_url = self.prometheus_url + "api/v1/targets"
+            conf = requests.get(targets_url)
+            if conf.status_code != 200:
+                logging.error(targets_url + " returned: " + conf.status_code)
+                continue
+            active_targets = conf.json()['data']['activeTargets']
+            for active_target in active_targets:
+                if active_target['labels']['service'] == target_service_name \
+                        and active_target['health'] == 'up':
+                    logging.debug("Found the target: "+ target_service_name)
+                    return True
+            logging.error("Could not find the target service in prometheus targets")
+            r = requests.post(self.prometheus_url + '-/reload')
+            if r.status_code != 200:
+                logging.error("Reloading the prometheus config was not successful: " + str(r.status_code))
+            time.sleep(1)
+            logging.error("Trying again: " + str(i))
+        return False
+
     def change_fetching_state(self,
                               enable: bool,
                               group="monitoring.coreos.com",
                               version="v1",
                               namespace="default",
                               plural="servicemonitors",
-                              name="prometheus-prometheus-node-exporter",
+                              name="csv-exporter",
                               ) -> bool:
         logging.debug("Changing fetching state to:" + str(enable))
         config.load_kube_config()
@@ -138,7 +163,7 @@ class PrometheusHandler:
             logging.error("Could not patch the monitoring service: " + str(e))
             return False
 
-        r = requests.post(self.prometheus_url + '/-/reload')
+        r = requests.post(self.prometheus_url + '-/reload')
         if r.status_code != 200:
             logging.error("Reloading the prometheus config was not successful: " + str(r.status_code))
             return False

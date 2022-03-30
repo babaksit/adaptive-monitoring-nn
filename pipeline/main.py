@@ -2,20 +2,37 @@ import argparse
 import json
 import logging
 import os
-import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Union, Sequence, Dict
+from typing import Union, Sequence, Dict, Type
 
 import numpy as np
 import pandas as pd
-import requests
 from darts import TimeSeries
-
+from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
+from darts import models
 from pipeline.dataset.dataset_loader import DatasetLoader
-from pipeline.models.forecast_models import TFTModel, NBeatsModel, ForecastModel, LSTMModel
+from darts.models import (
+    BlockRNNModel,
+    NBEATSModel,
+    TFTModel
+)
 from pipeline.prometheus.exporter_api_handler import ExporterApi
 from pipeline.prometheus.handler import PrometheusHandler
+from pipeline.utils.util import progressbar_sleep
+
+
+def generate_encoders(idxs):
+    days = ((idxs.second + idxs.minute * 60 + idxs.hour * 60 * 60 + idxs.dayofweek * 24 * 60 * 60) // (24 * 60)) % 7
+    encoders = []
+    for day in days:
+        if day == 0:
+            encoders.append(1)
+        elif day == 1 or day == 2 or day == 3 or day == 4:
+            encoders.append(2)
+        elif day == 5 or day == 6:
+            encoders.append(3)
+    return encoders
 
 
 class Pipeline:
@@ -23,8 +40,8 @@ class Pipeline:
     Pipeline class
 
     """
-    model_dict: Dict[str, Union[NBeatsModel, TFTModel]]
-    forecast_model: ForecastModel
+    model_dict: Dict[str, Type[Union[NBEATSModel, TFTModel, BlockRNNModel]]]
+    forecast_model: TorchForecastingModel
 
     def __init__(self, config_path: str):
         """
@@ -59,13 +76,7 @@ class Pipeline:
         with open(config_path) as f:
             self.config = json.load(f)
 
-        # self.dataset_loader = DatasetLoader(self.config["dataset_path"],
-        #                                     self.config["time_col"],
-        #                                     self.config["target_cols"],
-        #                                     resample_freq=self.config["frequency"],
-        #                                     augment=self.config["augment"]
-        #                                     )
-        self.model_dict = {"TFT": TFTModel(), "NBeats": NBeatsModel(), "LSTM": LSTMModel()}
+        self.model_dict = {"TFT": TFTModel, "NBeats": NBEATSModel, "LSTM": BlockRNNModel}
         # self.create_forecast_model(self.config["model_name"])
         self.forecast_model = None
         self.load_forecast_model()
@@ -81,7 +92,7 @@ class Pipeline:
         self.clear_keep_list_url = self.config["clear_keep_list_url"]
         self.predict_length = self.config["predict_length"]
         self.fetching_duration = self.config["fetching_duration"]
-        self.predict_frequency = self.config["predict_frequency"]
+        self.predict_frequency = self.config["frequency"]
         self.std_threshold = self.config["std_threshold"]
         self.cols = []
         self.col_query_dict = {}
@@ -89,6 +100,7 @@ class Pipeline:
         self.exporter_api = ExporterApi(col_query_dict=self.col_query_dict,
                                         clear_keep_list_url=self.clear_keep_list_url,
                                         keep_metric_url=self.keep_metric_url,
+                                        drop_metric_url=self.drop_metric_url,
                                         start_csv_exporter_url=self.start_csv_exporter_url)
         # self.queries = [query['query'] for query in self.config["queries"]]
         # self.queries_column_names = [query['column_name'] for query in self.config["queries"]]
@@ -96,13 +108,12 @@ class Pipeline:
         self.fetching_offset = self.config["fetching_offset"]
         self.query_delta_time = self.config["query_delta_time"]
         self.stop_pipeline = False
-
         self.date_format_str = '%Y-%m-%dT%H:%M:%SZ'
         self.save_new_queries_dir = "prometheus_new_queries"
 
     def load_forecast_model(self):
-        model = self.config["model_name"]
-        self.forecast_model = model.load_model(self.config["model_path"])
+        self.forecast_model = self.model_dict[self.config["model_name"]] \
+            .load_model(self.config["model_path"])
 
     def create_query_dict(self, queries):
         for query in queries:
@@ -124,14 +135,25 @@ class Pipeline:
         logging.debug("saved " + type_str + " for df with start time of " + str(df.index[0]))
 
     def predict(self, series, single_pred: bool, save_df: bool = True) -> TimeSeries:
+
+        logging.debug("Predicting Series before shift: " + str(series))
+
         series_to_predict = self.shift_series(series, shift_back=False)
+
+        logging.debug("Predicting Series after shift: " + str(series_to_predict))
         if single_pred:
-            prediction = self.forecast_model.predict(self.predict_length, series_to_predict, num_samples=1)
+            prediction = self.forecast_model.predict(series=series_to_predict,
+                                                     n=self.predict_length,
+                                                     num_samples=1)
         else:
-            prediction = self.forecast_model.predict(self.predict_length, series_to_predict)
+            prediction = self.forecast_model.predict(series=series_to_predict,
+                                                     n=self.predict_length,
+                                                     num_samples=100)
         if save_df:
             if not single_pred:
-                prediction_to_save = self.forecast_model.predict(self.predict_length, series_to_predict, num_samples=1)
+                prediction_to_save = self.forecast_model.predict(series=series_to_predict,
+                                                                 n=self.predict_length,
+                                                                 num_samples=1)
                 self.save_prediction_queries(prediction_to_save.pd_dataframe(copy=False),
                                              type_str="prediction")
             else:
@@ -141,16 +163,15 @@ class Pipeline:
         return self.shift_series(prediction, shift_back=True)
 
     def get_cols_to_fetch(self, prediction: Union[TimeSeries, Sequence[TimeSeries]]):
-        metrics_to_predict = []
-        high_confidence_cols = []
+        cols_to_fetch = []
         for i, component in enumerate(prediction.components):
             pred = prediction.univariate_component(i)
             pred = pred.all_values()  # Time X Components X samples
             pred = np.squeeze(pred)  # Time X samples
             std = np.mean(np.std(pred, axis=1))
             if std > self.std_threshold:
-                metrics_to_predict += self.col_query_dict[component]["metrics"]
-        return metrics_to_predict
+                cols_to_fetch.append(component)
+        return cols_to_fetch
 
     def save_new_queries_df(self, df, start_time, end_time):
 
@@ -178,28 +199,41 @@ class Pipeline:
 
     def shift_series(self, series: TimeSeries, shift_back=False) -> TimeSeries:
         coef = -1 if shift_back else 1
-        time_index = series.time_index.shift(freq=coef*pd.Timedelta(self.query_delta_time))
-        return TimeSeries.from_times_and_values(time_index,series.all_values())
+        time_index = series.time_index.shift(freq=coef * pd.Timedelta(self.query_delta_time))
+        return TimeSeries.from_times_and_values(time_index, series.all_values(), columns=series.columns)
 
     def fetch_queries(self, duration_seconds, cols: list, start_time: datetime,
                       return_series=True, save_df: bool = True) -> Union[pd.DataFrame,
                                                                          TimeSeries]:
-        logging.debug("starting fetching queries")
-        self.prometheus_handler.change_fetching_state(enable=True)
-        self.exporter_api.keep_metrics(cols, keep_all=len(self.cols) == len(cols))
+
+
         end_time = start_time + timedelta(seconds=duration_seconds)
-        time.sleep(duration_seconds)
+
+        # tmp = start_time
+        # start_time = end_time
+        # end_time = tmp
+
+        logging.debug("starting fetching queries for components: " + str(cols))
+        logging.debug("start time: " + str(start_time) + " - end time: " + str(end_time))
+        self.prometheus_handler.change_fetching_state(enable=True)
+        # TODO get target_service_name from config file
+        self.prometheus_handler.check_target_exits(target_service_name="csv-exporter")
+        self.exporter_api.keep_metrics(cols, keep_all=len(self.cols) == len(cols))
+
         queries = []
         for col in cols:
-            queries += self.col_query_dict[col]["query"]
+            queries.append(self.col_query_dict[col]["query"])
 
+        # TODO uncomment this line
+        progressbar_sleep(duration_seconds)
+        df = self.prometheus_handler.fetch_queries(
+            start_time.strftime(self.date_format_str),
+            end_time.strftime(self.date_format_str),
+            queries,
+            cols
+        )
         # TODO check if we should disable fetching metrics after fetching metrics
-        self.prometheus_handler.change_fetching_state(enable=False)
-        df = self.prometheus_handler.fetch_queries(start_time.strftime(self.date_format_str),
-                                                   end_time.strftime(self.date_format_str),
-                                                   queries,
-                                                   cols)
-
+        # self.prometheus_handler.change_fetching_state(enable=False)
         # TODO check if it is needed to save the metrics, as prometheus already have it
         # self.save_new_queries_df(df, start_time, end_time)
         if save_df:
@@ -221,7 +255,8 @@ class Pipeline:
         if time_diff_sec > 0.0:
             logging.debug("waiting before fetching metrics again for: "
                           + str(time_diff_sec) + " seconds")
-            time.sleep(time_diff_sec)
+            progressbar_sleep(int(time_diff_sec))
+            # time.sleep(time_diff_sec)
         logging.debug("waiting for fetching metrics has finished")
 
     @staticmethod
@@ -231,7 +266,7 @@ class Pipeline:
         logging.debug("Merging prediction and fetched series")
         if prediction.start_time() != fetched_series.start_time():
             logging.error("prediction and fetched series start time are different: " \
-                          + str(prediction.start_time()) + str(fetched_series.start_time()))
+                          + str(prediction.start_time()) + "<>" + str(fetched_series.start_time()))
             return None
 
         if prediction.end_time() < fetched_series.end_time():
@@ -246,11 +281,12 @@ class Pipeline:
 
     def run(self):
         self.exporter_api.start_csv_exporter()
-        series_to_predict = self.fetch_queries(self.fetching_duration, self.cols,
+        series_to_predict = self.fetch_queries(self.fetching_duration + 5, self.cols,
                                                self.get_current_time())
         last_pred_time: datetime = None
         while not self.stop_pipeline:
             prediction = self.predict(series_to_predict, single_pred=False)
+            logging.debug(str(prediction))
             cols_to_fetch = self.get_cols_to_fetch(prediction)
             # The prediction was high confidence for all the metrics
             if not cols_to_fetch:

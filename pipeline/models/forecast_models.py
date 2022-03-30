@@ -72,7 +72,7 @@ class ForecastModel:
         """
         self.model.fit(train, val_series=val, verbose=True)
 
-    def predict(self, predict_length: int, series: TimeSeries,
+    def predict_series(self, predict_length: int, series: TimeSeries,
                 num_samples: int = 100, plot: bool = False,
                 low_quantile: float = 0.1, high_quantile: float = 0.9) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
@@ -102,7 +102,7 @@ class ForecastModel:
 
         """
 
-        pred = self.model.predict(series=series[:-predict_length],
+        pred = self.model.predict(series=series,
                                   n=predict_length,
                                   num_samples=num_samples)
         if plot:
@@ -142,7 +142,7 @@ class TFTModel(ForecastModel):
             Batch Size
 
         """
-        super().__init__(self, input_length, predict_length,
+        super().__init__(input_length, predict_length,
                          quantiles, n_epochs, batch_size)
 
     def create_model(self):
@@ -238,7 +238,6 @@ class NBeatsModel(ForecastModel):
 
     def load_model(self, path):
         self.model = models.NBEATSModel().load_model(path)
-        return self.model
 
 
 class LSTMModel(ForecastModel):
@@ -315,5 +314,5 @@ class LSTMModel(ForecastModel):
         )
 
     def load_model(self, path):
-        self.model = models.BlockRNNModel().load_model(path)
+        self.model = models.BlockRNNModel.load_model(path)
         return self.model

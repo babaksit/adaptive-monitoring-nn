@@ -10,3 +10,4 @@ fastcore
 pika
 prometheus-api-client
 prometheus-pandas
+darts==0.16.1
