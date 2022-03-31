@@ -9,14 +9,14 @@ from typing import Union, Sequence, Dict, Type
 import numpy as np
 import pandas as pd
 from darts import TimeSeries
-from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
-from darts import models
-from pipeline.dataset.dataset_loader import DatasetLoader
 from darts.models import (
     BlockRNNModel,
     NBEATSModel,
     TFTModel
 )
+from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
+
+from pipeline.dataset.dataset_loader import DatasetLoader
 from pipeline.prometheus.exporter_api_handler import ExporterApi
 from pipeline.prometheus.handler import PrometheusHandler
 from pipeline.utils.util import progressbar_sleep
@@ -110,6 +110,7 @@ class Pipeline:
         self.stop_pipeline = False
         self.date_format_str = '%Y-%m-%dT%H:%M:%SZ'
         self.save_new_queries_dir = "prometheus_new_queries"
+        self.merged_df = None
 
     def load_forecast_model(self):
         self.forecast_model = self.model_dict[self.config["model_name"]] \
@@ -136,11 +137,8 @@ class Pipeline:
 
     def predict(self, series, single_pred: bool, save_df: bool = True) -> TimeSeries:
 
-        logging.debug("Predicting Series before shift: " + str(series))
-
         series_to_predict = self.shift_series(series, shift_back=False)
 
-        logging.debug("Predicting Series after shift: " + str(series_to_predict))
         if single_pred:
             prediction = self.forecast_model.predict(series=series_to_predict,
                                                      n=self.predict_length,
@@ -170,7 +168,12 @@ class Pipeline:
             pred = np.squeeze(pred)  # Time X samples
             std = np.mean(np.std(pred, axis=1))
             if std > self.std_threshold:
+                logging.warning("Component: " + str(component) + " has std value more than threshold:"
+                                + str(self.std_threshold) + "std: " + str(std))
                 cols_to_fetch.append(component)
+            else:
+                logging.debug("Component: " + str(component) + " has std value less than threshold:"
+                                + str(self.std_threshold) + "std: " + str(std))
         return cols_to_fetch
 
     def save_new_queries_df(self, df, start_time, end_time):
@@ -206,7 +209,6 @@ class Pipeline:
                       return_series=True, save_df: bool = True) -> Union[pd.DataFrame,
                                                                          TimeSeries]:
 
-
         end_time = start_time + timedelta(seconds=duration_seconds)
 
         # tmp = start_time
@@ -233,7 +235,7 @@ class Pipeline:
             cols
         )
         # TODO check if we should disable fetching metrics after fetching metrics
-        # self.prometheus_handler.change_fetching_state(enable=False)
+        self.prometheus_handler.change_fetching_state(enable=False)
         # TODO check if it is needed to save the metrics, as prometheus already have it
         # self.save_new_queries_df(df, start_time, end_time)
         if save_df:
@@ -274,9 +276,9 @@ class Pipeline:
 
         prediction_components = prediction.components.to_list()
         fetched_series_components = fetched_series.components.to_list()
-        logging.debug("prediction_components: " + str(prediction_components))
-        logging.debug("fetched_series_components: " + str(fetched_series_components))
         diff_components = list(set(prediction_components) - set(fetched_series_components))
+        logging.debug("diff_components: " + str(diff_components))
+        logging.debug("prediction_components" + str(prediction_components))
         prediction_diff_series = prediction[diff_components].slice(fetched_series.start_time(),
                                                                    fetched_series.end_time())
         return prediction_diff_series.concatenate(fetched_series, axis=1)
@@ -285,10 +287,11 @@ class Pipeline:
         self.exporter_api.start_csv_exporter()
         series_to_predict = self.fetch_queries(self.fetching_duration + 5, self.cols,
                                                self.get_current_time())
+        logging.debug(series_to_predict.pd_dataframe(copy=False))
         last_pred_time: datetime = None
         while not self.stop_pipeline:
             prediction = self.predict(series_to_predict, single_pred=False)
-            logging.debug(str(prediction))
+            logging.debug("Predicted: " + str(prediction.quantile_df()))
             cols_to_fetch = self.get_cols_to_fetch(prediction)
             # The prediction was high confidence for all the metrics
             if not cols_to_fetch:
@@ -303,6 +306,10 @@ class Pipeline:
             self.wait_before_fetching(last_pred_time)
             fetched_series = self.fetch_queries(self.fetching_duration, cols_to_fetch,
                                                 prediction.start_time().to_pydatetime())
+            # All components are fetched no need for prediction
+            if len(cols_to_fetch) == len(self.cols):
+                series_to_predict = fetched_series
+                continue
             single_prediction = self.predict(series_to_predict, single_pred=True, save_df=False)
             series_to_predict = self.merge_prediction_fetched_series(single_prediction, fetched_series)
 

@@ -76,7 +76,10 @@ class PrometheusHandler:
                     logging.error(str(re))
                     continue
                 if len(df.columns) == 0:
-                    logging.error("Query: " + query_str + " returned no value:")
+                    logging.error("Query: " + query_str +
+                                  " returned no value withing range: "
+                                  + str(cd[0]) + " <> " + str(cd[1])
+                                  )
                     continue
                 if single_column_query and len(df.columns) != 1:
                     logging.error("Query: " + query_str + " has more than one value:" + str(df.columns))
@@ -100,7 +103,7 @@ class PrometheusHandler:
 
         return result
 
-    def check_target_exits(self, target_service_name: str, num_try: int = 60):
+    def check_target_exits(self, target_service_name: str, num_try: int = 90):
 
         for i in range(num_try):
             targets_url = self.prometheus_url + "api/v1/targets"
@@ -112,12 +115,13 @@ class PrometheusHandler:
             for active_target in active_targets:
                 if active_target['labels']['service'] == target_service_name \
                         and active_target['health'] == 'up':
-                    logging.debug("Found the target: "+ target_service_name)
+                    logging.debug("Found the target: " + target_service_name)
                     return True
             logging.error("Could not find the target service in prometheus targets")
-            r = requests.post(self.prometheus_url + '-/reload')
-            if r.status_code != 200:
-                logging.error("Reloading the prometheus config was not successful: " + str(r.status_code))
+            if i % 5 == 0:
+                r = requests.post(self.prometheus_url + '-/reload')
+                if r.status_code != 200:
+                    logging.error("Reloading the prometheus config was not successful: " + str(r.status_code))
             time.sleep(1)
             logging.error("Trying again: " + str(i))
         return False

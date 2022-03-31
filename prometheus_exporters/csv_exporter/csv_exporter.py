@@ -113,18 +113,20 @@ class CSVExporter:
         return ""
 
     def run(self):
-        for _, row in self.df.iterrows():
-            now = time.time()
-            for col in self.df.columns:
-                gauge_name = self.col_gauges[col]
-                self.gauges_col_val[gauge_name][col] = float(row[col])
-            time_diff = self.time_interval_seconds - (time.time() - now)
-            if time_diff > 0.00:
-                time.sleep(time_diff)
-            if self.restart:
-                self.restart = False
-            if self.stop_run:
-                break
+        while not self.stop_run:
+            for _, row in self.df.iterrows():
+                now = time.time()
+                for col in self.df.columns:
+                    gauge_name = self.col_gauges[col]
+                    self.gauges_col_val[gauge_name][col] = float(row[col])
+                time_diff = self.time_interval_seconds - (time.time() - now)
+                if time_diff > 0.00:
+                    time.sleep(time_diff)
+                if self.restart:
+                    self.restart = False
+                    break
+                if self.stop_run:
+                    break
 
 
 if __name__ == '__main__':

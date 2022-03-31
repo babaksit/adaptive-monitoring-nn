@@ -22,7 +22,7 @@ spec:
         kubernetes.io/hostname: minikube-m02
       containers:
       - name: csv-exporter
-        image: babaksit/csv_exporter:v0.0.2
+        image: babaksit/csv_exporter:v0.0.3
         ports:
           - containerPort: 9393
         args: [ "--time-interval", "{{ .Values.timeInterval }}",
