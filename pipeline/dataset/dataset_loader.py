@@ -17,6 +17,7 @@ class DatasetLoader:
     def __init__(self, df_path: str, time_col: str,
                  target_cols, convert_cols_to_rate: list = None,
                  resample_freq='1Min', shift_df_datetime: str = None,
+                 fill_missing_dates = False,
                  augment=False):
         """
 
@@ -47,7 +48,7 @@ class DatasetLoader:
         # self.remove_constant_cols()
         self.create_darts_df()
         # self.create_rate_cols(convert_cols_to_rate)
-        self.scale_darts_series()
+        self.scale_darts_series(fill_missing_dates=fill_missing_dates)
         if augment:
             self.series_scaled = self.augment_series()
 
