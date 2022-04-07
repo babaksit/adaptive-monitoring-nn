@@ -135,7 +135,14 @@ class Pipeline:
         df.to_csv(output_dir / output_file)
         logging.debug("saved " + type_str + " for df with start time of " + str(df.index[0]))
 
-    def predict(self, series, single_pred: bool, save_df: bool = True) -> TimeSeries:
+    def save_merged_series(self):
+        output_file = "merged.csv"
+        output_dir = Path(self.prediction_queries_save_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        self.merged_series.to_csv(output_dir / output_file)
+        logging.debug("saved merged series")
+
+    def predict(self, series, single_pred: bool, save_df: bool = False) -> TimeSeries:
 
         series_to_predict = self.shift_series(series, shift_back=False)
 
@@ -206,7 +213,7 @@ class Pipeline:
         return TimeSeries.from_times_and_values(time_index, series.all_values(), columns=series.columns)
 
     def fetch_queries(self, duration_seconds, cols: list, start_time: datetime,
-                      return_series=True, save_df: bool = True) -> Union[pd.DataFrame, TimeSeries]:
+                      return_series=True, save_df: bool = False) -> Union[pd.DataFrame, TimeSeries]:
 
         end_time = start_time + timedelta(seconds=duration_seconds)
 
@@ -287,12 +294,11 @@ class Pipeline:
             self.merged_series = series
             return
         self.merged_series = DatasetLoader.series_append(self.merged_series, series)
-        save_file = os.path.join(self.prediction_queries_save_dir, "merged.csv")
-        self.merged_series.to_csv(save_file)
+        self.save_merged_series()
 
     def run(self):
         self.exporter_api.start_csv_exporter()
-        series_to_predict = self.fetch_queries(self.fetching_duration + 5, self.cols,
+        series_to_predict = self.fetch_queries(self.fetching_duration, self.cols,
                                                self.get_current_time())
         logging.debug(series_to_predict.pd_dataframe(copy=False))
         self.merge_series(series_to_predict)

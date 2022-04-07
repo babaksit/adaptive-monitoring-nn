@@ -5,6 +5,7 @@ import tsaug
 from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
 import matplotlib.pyplot as plt
+from darts.utils.missing_values import fill_missing_values
 
 
 class DatasetLoader:
@@ -91,7 +92,7 @@ class DatasetLoader:
         self.darts_df = self.darts_df.resample(self.resample_freq).mean()
         self.darts_df = self.darts_df.reset_index()
 
-    def scale_darts_series(self):
+    def scale_darts_series(self, fill_missing_dates=False):
         """
 
         Returns
@@ -99,9 +100,9 @@ class DatasetLoader:
 
         """
 
-        series = TimeSeries.from_dataframe(self.darts_df, self.time_col, self.target_cols)
-        torch.manual_seed(1)
-        np.random.seed(1)
+        series = TimeSeries.from_dataframe(self.darts_df, self.time_col, self.target_cols, fill_missing_dates=fill_missing_dates)
+        if fill_missing_dates:
+            series = fill_missing_values(series)
         self.scaler = Scaler()
         # TODO scale train test val separately
         self.series_scaled = self.scaler.fit_transform(series)
