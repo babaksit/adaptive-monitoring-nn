@@ -16,7 +16,7 @@ class DatasetLoader:
 
     def __init__(self, df_path: str, time_col: str,
                  target_cols, convert_cols_to_rate: list = None,
-                 resample_freq='1Min', shift_df_datetime: str = None,
+                 resample_freq='1Min', resample_method='mean', shift_df_datetime: str = None,
                  fill_missing_dates = False,
                  augment=False):
         """
@@ -46,7 +46,7 @@ class DatasetLoader:
         self.resample_freq = resample_freq
         self.load_df(df_path)
         # self.remove_constant_cols()
-        self.create_darts_df()
+        self.create_darts_df(resample_method)
         # self.create_rate_cols(convert_cols_to_rate)
         self.scale_darts_series(fill_missing_dates=fill_missing_dates)
         if augment:
@@ -75,7 +75,7 @@ class DatasetLoader:
         self.shift_df_to(df, date_time)
         return TimeSeries.from_dataframe(df)
 
-    def create_darts_df(self):
+    def create_darts_df(self, resample_method: "mean"):
         """
         Create Pandas DataFrame for the darts library
 
@@ -90,7 +90,11 @@ class DatasetLoader:
             self.shift_df_to(self.darts_df, self.shift_df_datetime)
             # day_start = pd.Timestamp(self.darts_df.index[0].strftime(self.shift_df_datetime))
             # self.darts_df.index = self.darts_df.index.shift(periods=1, freq=(day_start - self.darts_df.index[0]))
-        self.darts_df = self.darts_df.resample(self.resample_freq).mean()
+        if resample_method == "mean":
+            self.darts_df = self.darts_df.resample(self.resample_freq).mean()
+        elif resample_method == "sum":
+            self.darts_df = self.darts_df.resample(self.resample_freq).sum()
+
         self.darts_df = self.darts_df.reset_index()
 
     def scale_darts_series(self, fill_missing_dates=False):

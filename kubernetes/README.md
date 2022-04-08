@@ -5,7 +5,7 @@
 Follow instruction in https://minikube.sigs.k8s.io/docs/start/
 <br />Start minikube with calico plugin
     
-    minikube start --nodes 2 --network-plugin=cni --memory 2048 --cpus 4
+    minikube start --nodes 2 --network-plugin=cni --cpus 16 --extra-config=kubelet.sync-frequency=1s
 
 ## 2. Install prometheus chart
 
