@@ -1,6 +1,7 @@
 from typing import Union, Sequence
 
 import matplotlib.pyplot as plt
+import torch
 from darts import models, TimeSeries
 from darts.dataprocessing.transformers import Scaler
 from darts.utils.likelihood_models import QuantileRegression
@@ -114,8 +115,12 @@ class ForecastModel:
 
         return pred
 
-    def load_model(self, path):
-        raise NotImplementedError
+    @staticmethod
+    def load_model(path, device_name):
+        device = torch.device(device_name)
+        with open(path, "rb") as fin:
+            model = torch.load(fin, map_location=device)
+        return model
 
 
 class TFTModel(ForecastModel):
@@ -175,9 +180,6 @@ class TFTModel(ForecastModel):
             log_tensorboard=self.log_tensorboard
         )
 
-    def load_model(self, path):
-        self.model = models.TFTModel().load_model(path)
-        return self.model
 
 
 class NBeatsModel(ForecastModel):
@@ -235,10 +237,6 @@ class NBeatsModel(ForecastModel):
             save_checkpoints=self.save_checkpoints,
             log_tensorboard=self.log_tensorboard
         )
-
-    def load_model(self, path):
-        self.model = models.NBEATSModel().load_model(path)
-
 
 class LSTMModel(ForecastModel):
     def __init__(self, input_length: int = 300, predict_length: int = 600,
@@ -312,7 +310,3 @@ class LSTMModel(ForecastModel):
             save_checkpoints=self.save_checkpoints,
             log_tensorboard=self.log_tensorboard
         )
-
-    def load_model(self, path):
-        self.model = models.BlockRNNModel.load_model(path)
-        return self.model

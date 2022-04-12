@@ -48,3 +48,8 @@ Follow instruction in https://minikube.sigs.k8s.io/docs/start/
     conda activate th
     export PYTHONPATH=.
     nohup python3 rabbitmq/message_handler/scenarios/pub_sub_scenario.py --scenario-config rabbitmq/message_handler/configs/pub_sub_scenario_cit.json --connection-config rabbitmq/message_handler/configs/connection.json &
+## 7. check network usage
+
+     echo "$(date '+TIME: %H:%M:%S') $(column -t /proc/net/dev)" >> logfile
+
+     scp -i $(minikube ssh-key -n minikube-m02)  docker@192.168.49.3:/home/docker/logfile /home/babakesistani/logfile

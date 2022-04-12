@@ -17,6 +17,7 @@ from darts.models import (
 from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
 
 from pipeline.dataset.dataset_loader import DatasetLoader
+from pipeline.models.forecast_models import ForecastModel
 from pipeline.prometheus.exporter_api_handler import ExporterApi
 from pipeline.prometheus.handler import PrometheusHandler
 from pipeline.utils.util import progressbar_sleep
@@ -106,15 +107,17 @@ class Pipeline:
         # self.queries_column_names = [query['column_name'] for query in self.config["queries"]]
         self.exporter_api.drop_metrics(self.config["drop_metrics"])
         self.fetching_offset = self.config["fetching_offset"]
-        self.query_delta_time = self.config["query_delta_time"]
+        now = pd.to_datetime(datetime.now())
+        ref = pd.to_datetime(self.config["query_delta_time"])
+        self.query_delta_time = pd.Timedelta(now - ref)
         self.stop_pipeline = False
         self.date_format_str = '%Y-%m-%dT%H:%M:%SZ'
         self.save_new_queries_dir = "prometheus_new_queries"
         self.merged_series: TimeSeries = None
 
     def load_forecast_model(self):
-        self.forecast_model = self.model_dict[self.config["model_name"]] \
-            .load_model(self.config["model_path"])
+        self.forecast_model = ForecastModel.load_model(self.config["model_path"],
+                                                       self.config["torch_device"])
 
     def create_query_dict(self, queries):
         for query in queries:
@@ -205,11 +208,11 @@ class Pipeline:
 
         """
 
-        return datetime.now() + timedelta(hours=server_time_diff)
+        return datetime.now()
 
     def shift_series(self, series: TimeSeries, shift_back=False) -> TimeSeries:
         coef = -1 if shift_back else 1
-        time_index = series.time_index.shift(freq=coef * pd.Timedelta(self.query_delta_time))
+        time_index = series.time_index.shift(freq=coef * self.query_delta_time)
         return TimeSeries.from_times_and_values(time_index, series.all_values(), columns=series.columns)
 
     def fetch_queries(self, duration_seconds, cols: list, start_time: datetime,
@@ -260,7 +263,10 @@ class Pipeline:
             # trigger start fetching metrics sooner,
             # since it takes some time for prometheus to discover the enabled ServiceMonitor
             time_diff_sec -= self.fetching_offset
+
         if time_diff_sec > 0.0:
+            logging.debug("last prediction time: " + str(last_pred_time))
+            logging.debug("current time: " + str(self.get_current_time()))
             logging.debug("waiting before fetching metrics again for: "
                           + str(time_diff_sec) + " seconds")
             progressbar_sleep(int(time_diff_sec))
@@ -273,9 +279,22 @@ class Pipeline:
 
         logging.debug("Merging prediction and fetched series")
         if prediction.start_time() != fetched_series.start_time():
-            logging.error("prediction and fetched series start time are different: " \
-                          + str(prediction.start_time()) + "<>" + str(fetched_series.start_time()))
-            return None
+            logging.warning("prediction and fetched series start time are different: " \
+                            + str(prediction.start_time()) + "<>" + str(fetched_series.start_time()))
+
+            if prediction.start_time() < fetched_series.start_time():
+                # TODO check this one
+                num_timesteps = prediction.slice(prediction.start_time(),
+                                                 fetched_series.start_time())[:-1].n_timesteps
+                diff_series = fetched_series.shift(-num_timesteps)
+                diff_series = diff_series[0]
+                for i in range(1, num_timesteps):
+                    diff_series = diff_series.append_values(diff_series[0].values())
+                logging.warning("extended series: " + str(diff_series))
+                logging.warning("fetched_series: " + str(fetched_series))
+                fetched_series = diff_series.concatenate(fetched_series)
+                logging.warning("new prediction and fetched series start time are: " \
+                                + str(prediction.start_time()) + "<>" + str(fetched_series.start_time()))
 
         if prediction.end_time() < fetched_series.end_time():
             raise NotImplementedError
@@ -305,13 +324,14 @@ class Pipeline:
         last_pred_time: datetime = None
         while not self.stop_pipeline:
             prediction = self.predict(series_to_predict, single_pred=False)
-            logging.debug("Predicted: " + str(prediction.quantile_df()))
             cols_to_fetch = self.get_cols_to_fetch(prediction)
             # The prediction was high confidence for all the metrics
             if not cols_to_fetch:
                 prediction = self.predict(series_to_predict, single_pred=True, save_df=False)
-                self.merge_series(prediction)
                 last_pred_time = prediction.end_time().to_pydatetime()
+                logging.debug("last prediction time: " + str(last_pred_time))
+                logging.debug("current time: " + str(self.get_current_time()))
+                self.merge_series(prediction)
                 series_to_predict = self.get_series_to_predict(series_to_predict, prediction)
                 # crop series_to_predict to the length of fetching_duration/model input_chunk_length
                 # since greater would be useless and cause memory usage
@@ -319,6 +339,7 @@ class Pipeline:
                     series_to_predict = series_to_predict[-self.fetching_duration:]
                 continue
             self.wait_before_fetching(last_pred_time)
+            last_pred_time = None
             fetched_series = self.fetch_queries(self.fetching_duration, cols_to_fetch,
                                                 prediction.start_time().to_pydatetime())
             # All components are fetched no need for prediction
