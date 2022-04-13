@@ -1,14 +1,14 @@
 {
   "name": "test",
   "type": "pub_sub",
-  "description": "IoT Vehicle Count",
+  "description": "Energy Total Load",
   "num_channels" : 1,
   "num_publishers" : 1,
   "num_subscribers" : 1,
   "queue_name" : "test",
   "exchange" : "logs",
   "exchange_type" : "fanout",
-  "dataset_path": "minimal_data/IoT_400_900_1s_24times.csv",
+  "dataset_path": "minimal_data/energy_total_load.csv",
   "time_column_name": "second",
-  "value_column_name": "vehicleCount"
+  "value_column_name": "total_load"
 }

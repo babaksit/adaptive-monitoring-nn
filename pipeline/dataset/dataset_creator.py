@@ -122,8 +122,7 @@ class DatasetCreator:
 
 
 if __name__ == '__main__':
-    logging.basicConfig(filename='dataset_creator.log', level=logging.DEBUG)
+    logging.basicConfig(level=logging.DEBUG)
     dc = DatasetCreator()
-    # dc.create_prometheus_queries_df("/home/bsi/adaptive-monitoring-nn/pipeline/configs/dataset.json")
-    dc.create_csv_exporter_df("/home/bsi/adaptive-monitoring-nn/pipeline/"
-                              "configs/csv_exporter_dataset.json")
+    dc.create_prometheus_queries_df("../configs/dataset.json")
+    # dc.create_csv_exporter_df("../configs/dataset.json")
