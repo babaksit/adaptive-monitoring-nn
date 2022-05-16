@@ -1,0 +1,13 @@
+pandas
+matplotlib
+numpy
+scikit-learn
+prometheus_client
+requests
+torch
+fastcore
+pika
+prometheus-api-client
+prometheus-pandas
+flask
+darts==0.16.1

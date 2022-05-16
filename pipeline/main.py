@@ -301,12 +301,29 @@ class Pipeline:
 
         prediction_components = prediction.components.to_list()
         fetched_series_components = fetched_series.components.to_list()
-        diff_components = list(set(prediction_components) - set(fetched_series_components))
-        logging.debug("diff_components: " + str(diff_components))
-        logging.debug("prediction_components" + str(prediction_components))
-        prediction_diff_series = prediction[diff_components].slice(fetched_series.start_time(),
-                                                                   fetched_series.end_time())
-        return prediction_diff_series.concatenate(fetched_series, axis=1)
+
+        result = None
+
+        for component in prediction_components:
+            if not result:
+                if component in fetched_series_components:
+                    result = fetched_series[component]
+                    continue
+                result = prediction[component]
+                continue
+            if component in fetched_series_components:
+                result = result.concatenate(fetched_series[component], axis=1)
+                continue
+            result = result.concatenate(prediction[component], axis=1)
+
+        return result.slice(fetched_series.start_time(), fetched_series.end_time())
+
+
+        # diff_components = list(set(prediction_components) - set(fetched_series_components))
+        #
+        # prediction_diff_series = prediction[diff_components].slice(fetched_series.start_time(),
+        #                                                            fetched_series.end_time())
+        # return prediction_diff_series.concatenate(fetched_series, axis=1)
 
     def merge_series(self, series):
         if self.merged_series is None:

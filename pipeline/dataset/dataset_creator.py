@@ -91,7 +91,7 @@ class DatasetCreator:
             new_columns.append(re.sub(r'\{.*?\}', sub_tmp, col))
         df.columns = new_columns
 
-    def create_csv_exporter_df(self, config_path: str, save: bool = True) -> pd.DataFrame:
+    def create_csv_exporter_df(self, config_path: str) -> pd.DataFrame:
 
         with open(config_path) as f:
             self.config = json.load(f)
@@ -124,5 +124,5 @@ class DatasetCreator:
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     dc = DatasetCreator()
-    dc.create_prometheus_queries_df("../configs/dataset.json")
-    # dc.create_csv_exporter_df("../configs/dataset.json")
+    # dc.create_prometheus_queries_df("../configs/dataset.json")
+    dc.create_csv_exporter_df("../configs/csv_exporter_dataset.json")

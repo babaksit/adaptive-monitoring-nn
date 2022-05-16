@@ -1,13 +1,13 @@
 {
-    "start_time": "2022-04-14T13:42:54Z",
-    "end_time": "2022-04-14T23:28:05Z",
+    "start_time": "2022-05-14T21:06:45Z",
+    "end_time": "2022-05-16T01:06:45Z",
     "save_dir": "../data",
     "step": "1s",
     "prometheus_url":"http://127.0.0.1:9090/" ,
     "queries":
     [
         {
-            "query" : "(100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[1m])) * 100))",
+            "query" : "(100 - (avg (rate(node_cpu_seconds_total{mode=\"idle\"}[1m])) * 100))",
             "column_name" : "cpu_rate"
         },
         {

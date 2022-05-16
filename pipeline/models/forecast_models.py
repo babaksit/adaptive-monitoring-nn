@@ -158,6 +158,7 @@ class TFTModel(ForecastModel):
         -------
 
         """
+        models.TFTModel.los
         self.model = models.TFTModel(
             input_chunk_length=self.input_length,
             output_chunk_length=self.predict_length,
