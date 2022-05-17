@@ -135,7 +135,7 @@ class PrometheusHandler:
                               name="csv-exporter",
                               ) -> bool:
         logging.debug("Changing fetching state to:" + str(enable))
-        config.load_kube_config()
+        config.load_incluster_config()
         api_custom = client.CustomObjectsApi()
         try:
             conf = api_custom.get_namespaced_custom_object(

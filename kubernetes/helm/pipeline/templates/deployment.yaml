@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pipeline-deployment
+  labels:
+    app: pipeline
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      app: pipeline
+  template:
+    metadata:
+      labels:
+        app: pipeline
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: minikube
+      containers:
+      - name: pipeline
+        image: babaksit/pipeline:v.0.2
+        args: ["--pipeline-config", "{{ .Values.configUrl }}"]
+

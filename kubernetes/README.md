@@ -51,5 +51,8 @@ Follow instruction in https://minikube.sigs.k8s.io/docs/start/
 ## 7. check network usage
 
      echo "$(date '+TIME: %H:%M:%S') $(column -t /proc/net/dev)" >> logfile
-
      scp -i $(minikube ssh-key -n minikube-m02)  docker@192.168.49.3:/home/docker/logfile /home/babakesistani/logfile
+
+
+# 8. 
+     kubectl create clusterrolebinding default-cluster-admin --clusterrole=cluster-admin --serviceaccount=default:default

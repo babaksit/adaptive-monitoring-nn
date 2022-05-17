@@ -10,4 +10,8 @@ pika
 prometheus-api-client
 prometheus-pandas
 flask
+kubernetes
 darts==0.16.1
+progressbar2
+python-dateutil
+kubernetes

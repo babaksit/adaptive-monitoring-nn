@@ -1,7 +1,5 @@
 import pandas as pd
 import numpy as np
-import torch
-import tsaug
 from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
 import matplotlib.pyplot as plt
@@ -129,7 +127,7 @@ class DatasetLoader:
 
         """
         if augmentations is None:
-            augmentations = [tsaug.AddNoise(scale=0.001)]
+            raise NotImplementedError
         augmented_sliced_series = []
         for date_time_range in date_time_ranges:
             sdf = series.pd_dataframe()[date_time_range]
@@ -209,49 +207,49 @@ class DatasetLoader:
         return TimeSeries.from_dataframe(result)
 
 
-    def augment_series(self, series: TimeSeries, augmentations=None, plot=False):
-        X = series.pd_dataframe().to_numpy().swapaxes(0, 1)
-        series_df = series.pd_dataframe(copy=False)
-
-        if augmentations is None:
-            augmentations = [
-                tsaug.AddNoise(scale=0.03),
-                tsaug.AddNoise(scale=0.028),
-                tsaug.AddNoise(scale=0.032),
-                tsaug.AddNoise(scale=0.036),
-                tsaug.AddNoise(scale=0.04),
-                tsaug.AddNoise(scale=0.029),
-                # tsaug.TimeWarp(n_speed_change=20, max_speed_ratio=1.11),
-                tsaug.AddNoise(scale=0.033),
-                tsaug.AddNoise(scale=0.027),
-                tsaug.AddNoise(scale=0.031),
-                tsaug.AddNoise(scale=0.035),
-                tsaug.AddNoise(scale=0.039),
-                tsaug.AddNoise(scale=0.038),
-                # tsaug.TimeWarp(n_speed_change=20, max_speed_ratio=1.1),
-                # tsaug.Drift(max_drift=0.04, n_drift_points=20),
-
-            ]
-
-        augmented_series = []
-        for x in X:
-            tmp_augmented_series = x
-            for aug in augmentations:
-                x_aug = aug.augment(x)
-                tmp_augmented_series = np.concatenate((tmp_augmented_series, x_aug), axis=0)
-                if plot:
-                    self.plot_augment_series(x, x_aug, title=str(aug))
-            augmented_series.append(tmp_augmented_series)
-
-        augmented_series = np.array(augmented_series).T
-
-        index = pd.date_range(start=series_df.index[0], freq=self.resample_freq,
-                              periods=augmented_series.shape[0])
-        augmented_series = pd.DataFrame(data=augmented_series, columns=self.target_cols, index=index)
-        augmented_series[self.time_col] = index
-        augmented_series = TimeSeries.from_dataframe(augmented_series, self.time_col, self.target_cols)
-
-        return augmented_series
+    # def augment_series(self, series: TimeSeries, augmentations=None, plot=False):
+    #     X = series.pd_dataframe().to_numpy().swapaxes(0, 1)
+    #     series_df = series.pd_dataframe(copy=False)
+    #
+    #     if augmentations is None:
+    #         augmentations = [
+    #             tsaug.AddNoise(scale=0.03),
+    #             tsaug.AddNoise(scale=0.028),
+    #             tsaug.AddNoise(scale=0.032),
+    #             tsaug.AddNoise(scale=0.036),
+    #             tsaug.AddNoise(scale=0.04),
+    #             tsaug.AddNoise(scale=0.029),
+    #             # tsaug.TimeWarp(n_speed_change=20, max_speed_ratio=1.11),
+    #             tsaug.AddNoise(scale=0.033),
+    #             tsaug.AddNoise(scale=0.027),
+    #             tsaug.AddNoise(scale=0.031),
+    #             tsaug.AddNoise(scale=0.035),
+    #             tsaug.AddNoise(scale=0.039),
+    #             tsaug.AddNoise(scale=0.038),
+    #             # tsaug.TimeWarp(n_speed_change=20, max_speed_ratio=1.1),
+    #             # tsaug.Drift(max_drift=0.04, n_drift_points=20),
+    #
+    #         ]
+    #
+    #     augmented_series = []
+    #     for x in X:
+    #         tmp_augmented_series = x
+    #         for aug in augmentations:
+    #             x_aug = aug.augment(x)
+    #             tmp_augmented_series = np.concatenate((tmp_augmented_series, x_aug), axis=0)
+    #             if plot:
+    #                 self.plot_augment_series(x, x_aug, title=str(aug))
+    #         augmented_series.append(tmp_augmented_series)
+    #
+    #     augmented_series = np.array(augmented_series).T
+    #
+    #     index = pd.date_range(start=series_df.index[0], freq=self.resample_freq,
+    #                           periods=augmented_series.shape[0])
+    #     augmented_series = pd.DataFrame(data=augmented_series, columns=self.target_cols, index=index)
+    #     augmented_series[self.time_col] = index
+    #     augmented_series = TimeSeries.from_dataframe(augmented_series, self.time_col, self.target_cols)
+    #
+    #     return augmented_series
 
     @staticmethod
     def plot_augment_series(x, x_aug, m=None, n=None, title=""):

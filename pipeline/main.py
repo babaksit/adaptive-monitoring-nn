@@ -8,6 +8,7 @@ from typing import Union, Sequence, Dict, Type
 
 import numpy as np
 import pandas as pd
+import requests
 from darts import TimeSeries
 from darts.models import (
     BlockRNNModel,
@@ -16,11 +17,11 @@ from darts.models import (
 )
 from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
 
-from pipeline.dataset.dataset_loader import DatasetLoader
-from pipeline.models.forecast_models import ForecastModel
-from pipeline.prometheus.exporter_api_handler import ExporterApi
-from pipeline.prometheus.handler import PrometheusHandler
-from pipeline.utils.util import progressbar_sleep
+from dataset.dataset_loader import DatasetLoader
+from models.forecast_models import ForecastModel
+from prometheus.exporter_api_handler import ExporterApi
+from prometheus.handler import PrometheusHandler
+from utils.util import progressbar_sleep
 
 
 def generate_encoders(idxs):
@@ -44,7 +45,7 @@ class Pipeline:
     model_dict: Dict[str, Type[Union[NBEATSModel, TFTModel, BlockRNNModel]]]
     forecast_model: TorchForecastingModel
 
-    def __init__(self, config_path: str):
+    def __init__(self, config_url: str):
         """
         Parameters
         ----------
@@ -74,8 +75,8 @@ class Pipeline:
             in order to shift the queries which are fetched during runtime, so it matches the scenario time
         """
 
-        with open(config_path) as f:
-            self.config = json.load(f)
+        req = requests.get(config_url)
+        self.config = json.loads(req.text)
 
         self.model_dict = {"TFT": TFTModel, "NBeats": NBEATSModel, "LSTM": BlockRNNModel}
         # self.create_forecast_model(self.config["model_name"])
@@ -378,7 +379,7 @@ if __name__ == '__main__':
                         datefmt='%Y-%m-%d %H:%M:%S')
     parser = argparse.ArgumentParser(description="Pipeline")
     parser.add_argument('--pipeline-config', type=str,
-                        help='Path to the pipeline config file', default="configs/pipeline.json")
+                        help='url of to the pipeline config file')
     args = parser.parse_args()
 
     pipeline = Pipeline(args.pipeline_config)

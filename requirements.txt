@@ -12,3 +12,6 @@ prometheus-api-client
 prometheus-pandas
 flask
 darts==0.16.1
+progressbar2
+python-dateutil
+kubernetes
