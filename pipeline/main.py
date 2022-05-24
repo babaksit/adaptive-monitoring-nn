@@ -8,6 +8,7 @@ from typing import Union, Sequence, Dict, Type
 
 import numpy as np
 import pandas as pd
+import pickle
 import requests
 from darts import TimeSeries
 from darts.models import (
@@ -21,20 +22,7 @@ from dataset.dataset_loader import DatasetLoader
 from models.forecast_models import ForecastModel
 from prometheus.exporter_api_handler import ExporterApi
 from prometheus.handler import PrometheusHandler
-from utils.util import progressbar_sleep
-
-
-def generate_encoders(idxs):
-    days = ((idxs.second + idxs.minute * 60 + idxs.hour * 60 * 60 + idxs.dayofweek * 24 * 60 * 60) // (24 * 60)) % 7
-    encoders = []
-    for day in days:
-        if day == 0:
-            encoders.append(1)
-        elif day == 1 or day == 2 or day == 3 or day == 4:
-            encoders.append(2)
-        elif day == 5 or day == 6:
-            encoders.append(3)
-    return encoders
+from utils.util import progressbar_sleep, day_of_week, minute_of_day
 
 
 class Pipeline:
@@ -115,6 +103,9 @@ class Pipeline:
         self.date_format_str = '%Y-%m-%dT%H:%M:%SZ'
         self.save_new_queries_dir = "prometheus_new_queries"
         self.merged_series: TimeSeries = None
+        self.merged_series_dic = {"cpu_rate": [], "memory_rate": [], "read_bytes_rate": [], "write_bytes_rate": []}
+
+        self.merged_series_dic = {}
 
     def load_forecast_model(self):
         self.forecast_model = ForecastModel.load_model(self.config["model_path"],
@@ -145,6 +136,14 @@ class Pipeline:
         output_dir.mkdir(parents=True, exist_ok=True)
         self.merged_series.to_csv(output_dir / output_file)
         logging.debug("saved merged series")
+
+    def save_merged_series_dic(self):
+        output_file = "merged_dic.pkl"
+        output_dir = Path(self.prediction_queries_save_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        with open(output_dir / output_file, 'wb') as f:
+            pickle.dump(self.merged_series_dic, f)
+        logging.debug("saved merged series dictionary")
 
     def predict(self, series, single_pred: bool, save_df: bool = False) -> TimeSeries:
 
@@ -303,6 +302,8 @@ class Pipeline:
         prediction_components = prediction.components.to_list()
         fetched_series_components = fetched_series.components.to_list()
 
+        prediction_tmp = prediction.slice(fetched_series.start_time(), fetched_series.end_time())
+
         result = None
 
         for component in prediction_components:
@@ -310,15 +311,14 @@ class Pipeline:
                 if component in fetched_series_components:
                     result = fetched_series[component]
                     continue
-                result = prediction[component]
+                result = prediction_tmp[component]
                 continue
             if component in fetched_series_components:
                 result = result.concatenate(fetched_series[component], axis=1)
                 continue
-            result = result.concatenate(prediction[component], axis=1)
+            result = result.concatenate(prediction_tmp[component], axis=1)
 
-        return result.slice(fetched_series.start_time(), fetched_series.end_time())
-
+        return result
 
         # diff_components = list(set(prediction_components) - set(fetched_series_components))
         #
@@ -333,24 +333,35 @@ class Pipeline:
         self.merged_series = DatasetLoader.series_append(self.merged_series, series)
         self.save_merged_series()
 
+    def merge_series_dic(self, series: TimeSeries):
+        if self.merged_series_dic is None:
+            for c in series.components.tolist():
+                self.merged_series_dic[c] = [series[c]]
+            return
+        for c in series.components.tolist():
+            self.merged_series_dic[c].append(series[c])
+        self.save_merged_series_dic()
+
     def run(self):
         self.exporter_api.start_csv_exporter()
         series_to_predict = self.fetch_queries(self.fetching_duration, self.cols,
                                                self.get_current_time())
         logging.debug(series_to_predict.pd_dataframe(copy=False))
         self.merge_series(series_to_predict)
+        self.merge_series_dic(series_to_predict)
         last_pred_time: datetime = None
         while not self.stop_pipeline:
             prediction = self.predict(series_to_predict, single_pred=False)
             cols_to_fetch = self.get_cols_to_fetch(prediction)
             # The prediction was high confidence for all the metrics
             if not cols_to_fetch:
-                prediction = self.predict(series_to_predict, single_pred=True, save_df=False)
-                last_pred_time = prediction.end_time().to_pydatetime()
+                single_prediction = self.predict(series_to_predict, single_pred=True, save_df=False)
+                last_pred_time = single_prediction.end_time().to_pydatetime()
                 logging.debug("last prediction time: " + str(last_pred_time))
                 logging.debug("current time: " + str(self.get_current_time()))
-                self.merge_series(prediction)
-                series_to_predict = self.get_series_to_predict(series_to_predict, prediction)
+                self.merge_series(single_prediction)
+                self.merge_series_dic(prediction)
+                series_to_predict = self.get_series_to_predict(series_to_predict, single_prediction)
                 # crop series_to_predict to the length of fetching_duration/model input_chunk_length
                 # since greater would be useless and cause memory usage
                 if len(series_to_predict) > self.fetching_duration:
@@ -364,10 +375,19 @@ class Pipeline:
             if len(cols_to_fetch) == len(self.cols):
                 series_to_predict = fetched_series
                 self.merge_series(series_to_predict)
+                self.merge_series_dic(series_to_predict)
                 continue
             single_prediction = self.predict(series_to_predict, single_pred=True, save_df=False)
             series_to_predict = self.merge_prediction_fetched_series(single_prediction, fetched_series)
             self.merge_series(series_to_predict)
+
+            #customized saving merging
+            for col_tmp in single_prediction.columns.tolist():
+                if col_tmp in cols_to_fetch:
+                    self.merged_series_dic[col_tmp].append(fetched_series[col_tmp])
+                else:
+                    self.merged_series_dic[col_tmp].append(prediction[col_tmp])
+                self.save_merged_series_dic()
             # if not series_to_predict:
             #     logging.error("could not merge prediction and fetched series -> using last prediction series")
             #     series_to_predict = single_prediction

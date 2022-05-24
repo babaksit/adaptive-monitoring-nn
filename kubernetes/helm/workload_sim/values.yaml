@@ -1,5 +1,5 @@
 rabbitmqHost : "127.0.0.1"
-replicas: 10
+replicas: 15
 cpuScale : 1
 # 1 MiB
 memoryScale : 1024

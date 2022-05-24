@@ -7,14 +7,14 @@
     "torch_device": "cpu",
     "time_col": "Time",
     "frequency": "1s",
-    "std_threshold": 0.05,
+    "std_threshold": 0.02,
     "augment": false,
     "keep_metric_url": "http://127.0.0.1:9393/keep_metric?metric=",
     "clear_keep_list_url": "http://127.0.0.1:9393/clear_keep_list",
     "drop_metric_url": "http://127.0.0.1:9393/drop_metric?metric=",
     "start_csv_exporter_url": "http://127.0.0.1:9393/start_csv_exporter",
     "fetching_offset": 10,
-    "query_delta_time": "2022-06-17 00:00:00",
+    "query_delta_time": "2022-03-24 01:12:00",
     "prometheus_url":"http://127.0.0.1:9090/" ,
     "queries":
     [

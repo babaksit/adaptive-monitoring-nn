@@ -13,7 +13,8 @@ Follow instruction in https://minikube.sigs.k8s.io/docs/start/
     helm repo add stable https://charts.helm.sh/stable
     helm repo update
     helm install prometheus prometheus-community/kube-prometheus-stack -f helm/prometheus/values.yaml
-   
+    #For Upgrading:
+    helm upgrade prometheus prometheus-community/kube-prometheus-stack -f helm/prometheus/values.yaml
 
 ## 3. Install rabbitmq chart
     helm repo add bitnami https://charts.bitnami.com/bitnami
@@ -34,16 +35,12 @@ Follow instruction in https://minikube.sigs.k8s.io/docs/start/
 ## 5. Run Workload Simulator
     
     helm install  workload-sim helm/workload_sim/. --set rabbitmqHost=$(kubectl get service/rabbitmq -o jsonpath='{.spec.clusterIP}')
- 
-## 6. Run Node Exporter Proxy
 
-    helm install  node-exporter-proxy helm/node_exporter_proxy/. --set nodeExporterHost=$(kubectl get service/prometheus-prometheus-node-exporter -o jsonpath='{.spec.clusterIP}')
-
-## 7. Run Node CSV Exporter
+## 6. Run Node CSV Exporter
 
     helm install  csv-exporter helm/csv_exporter/. 
 
-## 6. Run Scenario
+## 7. Run Scenario
 
     conda activate th
     export PYTHONPATH=.
@@ -52,7 +49,6 @@ Follow instruction in https://minikube.sigs.k8s.io/docs/start/
 
      echo "$(date '+TIME: %H:%M:%S') $(column -t /proc/net/dev)" >> logfile
      scp -i $(minikube ssh-key -n minikube-m02)  docker@192.168.49.3:/home/docker/logfile /home/babakesistani/logfile
-
 
 # 8. 
      kubectl create clusterrolebinding default-cluster-admin --clusterrole=cluster-admin --serviceaccount=default:default
