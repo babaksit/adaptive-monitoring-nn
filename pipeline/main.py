@@ -22,7 +22,20 @@ from dataset.dataset_loader import DatasetLoader
 from models.forecast_models import ForecastModel
 from prometheus.exporter_api_handler import ExporterApi
 from prometheus.handler import PrometheusHandler
-from utils.util import progressbar_sleep, day_of_week, minute_of_day
+from utils.util import progressbar_sleep
+
+
+def generate_encoders(idxs):
+    days = ((idxs.second + idxs.minute * 60 + idxs.hour * 60 * 60 + idxs.dayofweek * 24 * 60 * 60) // (24 * 60)) % 7
+    encoders = []
+    for day in days:
+        if day == 0:
+            encoders.append(1)
+        elif day == 1 or day == 2 or day == 3 or day == 4:
+            encoders.append(2)
+        elif day == 5 or day == 6:
+            encoders.append(3)
+    return encoders
 
 
 class Pipeline:
@@ -104,8 +117,6 @@ class Pipeline:
         self.save_new_queries_dir = "prometheus_new_queries"
         self.merged_series: TimeSeries = None
         self.merged_series_dic = {"cpu_rate": [], "memory_rate": [], "read_bytes_rate": [], "write_bytes_rate": []}
-
-        self.merged_series_dic = {}
 
     def load_forecast_model(self):
         self.forecast_model = ForecastModel.load_model(self.config["model_path"],
