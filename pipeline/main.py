@@ -24,7 +24,6 @@ from prometheus.exporter_api_handler import ExporterApi
 from prometheus.handler import PrometheusHandler
 from utils.util import progressbar_sleep
 
-
 def generate_encoders(idxs):
     days = ((idxs.second + idxs.minute * 60 + idxs.hour * 60 * 60 + idxs.dayofweek * 24 * 60 * 60) // (24 * 60)) % 7
     encoders = []
@@ -116,7 +115,9 @@ class Pipeline:
         self.date_format_str = '%Y-%m-%dT%H:%M:%SZ'
         self.save_new_queries_dir = "prometheus_new_queries"
         self.merged_series: TimeSeries = None
-        self.merged_series_dic = {"cpu_rate": [], "memory_rate": [], "read_bytes_rate": [], "write_bytes_rate": []}
+        self.merged_series_dic = {}
+        for query in self.config["queries"]:
+            self.merged_series_dic[query['column_name']] = []
 
     def load_forecast_model(self):
         self.forecast_model = ForecastModel.load_model(self.config["model_path"],
