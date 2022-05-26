@@ -17,6 +17,7 @@ from darts.models import (
     TFTModel
 )
 from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
+from darts.dataprocessing.transformers import Scaler
 
 from dataset.dataset_loader import DatasetLoader
 from models.forecast_models import ForecastModel
@@ -65,7 +66,8 @@ class Pipeline:
 
         req = requests.get(config_url)
         self.config = json.loads(req.text)
-
+        with open('saved_models/scaler', 'rb') as handle:
+            self.scaler: Scaler = pickle.load(handle)
         self.model_dict = {"TFT": TFTModel, "NBeats": NBEATSModel, "LSTM": BlockRNNModel}
         # self.create_forecast_model(self.config["model_name"])
         self.forecast_model = None
@@ -346,7 +348,8 @@ class Pipeline:
         self.exporter_api.start_csv_exporter()
         series_to_predict = self.fetch_queries(self.fetching_duration, self.cols,
                                                self.get_current_time())
-        logging.debug(series_to_predict.pd_dataframe(copy=False))
+        series_to_predict = self.scaler.transform(series_to_predict)
+        # logging.debug(str(series_to_predict.pd_dataframe(copy=False)))
         self.merge_series(series_to_predict)
         self.merge_series_dic(series_to_predict)
         last_pred_time: datetime = None
@@ -371,6 +374,7 @@ class Pipeline:
             last_pred_time = None
             fetched_series = self.fetch_queries(self.fetching_duration, cols_to_fetch,
                                                 prediction.start_time().to_pydatetime())
+            fetched_series = self.scaler.transform(fetched_series)
             # All components are fetched no need for prediction
             if len(cols_to_fetch) == len(self.cols):
                 series_to_predict = fetched_series
