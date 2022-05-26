@@ -45,6 +45,7 @@ Follow instruction in https://minikube.sigs.k8s.io/docs/start/
     conda activate th
     export PYTHONPATH=.
     nohup python3 rabbitmq/message_handler/scenarios/pub_sub_scenario.py --scenario-config rabbitmq/message_handler/configs/pub_sub_scenario_cit.json --connection-config rabbitmq/message_handler/configs/connection.json &
+
 ## 7. check network usage
 
      echo "$(date '+TIME: %H:%M:%S') $(column -t /proc/net/dev)" >> logfile
@@ -52,3 +53,6 @@ Follow instruction in https://minikube.sigs.k8s.io/docs/start/
 
 # 8. 
      kubectl create clusterrolebinding default-cluster-admin --clusterrole=cluster-admin --serviceaccount=default:default
+
+# 9.
+    helm install pipeline helm/pipeline/.

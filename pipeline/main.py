@@ -22,19 +22,7 @@ from dataset.dataset_loader import DatasetLoader
 from models.forecast_models import ForecastModel
 from prometheus.exporter_api_handler import ExporterApi
 from prometheus.handler import PrometheusHandler
-from utils.util import progressbar_sleep
-
-def generate_encoders(idxs):
-    days = ((idxs.second + idxs.minute * 60 + idxs.hour * 60 * 60 + idxs.dayofweek * 24 * 60 * 60) // (24 * 60)) % 7
-    encoders = []
-    for day in days:
-        if day == 0:
-            encoders.append(1)
-        elif day == 1 or day == 2 or day == 3 or day == 4:
-            encoders.append(2)
-        elif day == 5 or day == 6:
-            encoders.append(3)
-    return encoders
+from utils.util import progressbar_sleep,day_of_week,minute_of_day
 
 
 class Pipeline:

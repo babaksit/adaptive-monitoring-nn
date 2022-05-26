@@ -6,7 +6,6 @@ from darts import models, TimeSeries
 from darts.dataprocessing.transformers import Scaler
 from darts.utils.likelihood_models import QuantileRegression
 
-
 class ForecastModel:
     """
     Forecasting Model
@@ -158,7 +157,6 @@ class TFTModel(ForecastModel):
         -------
 
         """
-        models.TFTModel.los
         self.model = models.TFTModel(
             input_chunk_length=self.input_length,
             output_chunk_length=self.predict_length,
