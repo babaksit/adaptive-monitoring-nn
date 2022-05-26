@@ -374,15 +374,17 @@ class Pipeline:
             last_pred_time = None
             fetched_series = self.fetch_queries(self.fetching_duration, cols_to_fetch,
                                                 prediction.start_time().to_pydatetime())
-            fetched_series = self.scaler.transform(fetched_series)
+
             # All components are fetched no need for prediction
             if len(cols_to_fetch) == len(self.cols):
-                series_to_predict = fetched_series
+                series_to_predict = self.scaler.transform(fetched_series)
                 self.merge_series(series_to_predict)
                 self.merge_series_dic(series_to_predict)
                 continue
             single_prediction = self.predict(series_to_predict, single_pred=True, save_df=False)
+            single_prediction = self.scaler.inverse_transform(single_prediction)
             series_to_predict = self.merge_prediction_fetched_series(single_prediction, fetched_series)
+            series_to_predict = self.scaler.transform(series_to_predict)
             self.merge_series(series_to_predict)
 
             #customized saving merging

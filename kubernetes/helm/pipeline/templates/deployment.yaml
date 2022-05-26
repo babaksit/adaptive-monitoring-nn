@@ -18,6 +18,6 @@ spec:
         kubernetes.io/hostname: minikube
       containers:
       - name: pipeline
-        image: babaksit/pipeline:v.0.6
+        image: babaksit/pipeline:v.0.8
         args: ["--pipeline-config", "{{ .Values.configUrl }}"]
 

@@ -10,6 +10,7 @@ COPY dataset dataset
 COPY prometheus prometheus
 COPY utils utils
 COPY saved_models/lstm_300_300.pth.tar saved_models/lstm_300_300.pth.tar
+COPY saved_models/scaler saved_models/scaler
 COPY run_pipeline.sh .
 COPY main.py .
 RUN chmod +x run_pipeline.sh
