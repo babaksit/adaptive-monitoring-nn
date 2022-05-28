@@ -47,10 +47,15 @@ Follow instruction in https://minikube.sigs.k8s.io/docs/start/
     nohup python3 rabbitmq/message_handler/scenarios/pub_sub_scenario.py --scenario-config rabbitmq/message_handler/configs/pub_sub_scenario_cit.json --connection-config rabbitmq/message_handler/configs/connection.json &
 
 ## 7. check network usage
-
+    #!/bin/bash
+    while true
+    do
+        echo "$(date '+TIME: %H:%M:%S') $(column -t /proc/net/dev)" >> logfile
+        sleep 1
+    done
      echo "$(date '+TIME: %H:%M:%S') $(column -t /proc/net/dev)" >> logfile
      scp -i $(minikube ssh-key -n minikube-m02)  docker@192.168.49.3:/home/docker/logfile /home/babakesistani/logfile
-
+    
 # 8. 
      kubectl create clusterrolebinding default-cluster-admin --clusterrole=cluster-admin --serviceaccount=default:default
 
