@@ -60,3 +60,4 @@ if __name__ == '__main__':
                         format='%(asctime)s %(levelname)-4s %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S')
     change_fetching_state(False)
+    # req = requests.get("http://127.0.0.1:9393/start_csv_exporter")

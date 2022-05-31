@@ -179,6 +179,11 @@ class Pipeline:
             pred = pred.all_values()  # Time X Components X samples
             pred = np.squeeze(pred)  # Time X samples
             std = np.mean(np.std(pred, axis=1))
+            if np.isnan(std):
+                logging.warning("Component: " + str(component) + " has nan std")
+                cols_to_fetch = prediction.components.tolist()
+                break
+
             if std > self.std_threshold:
                 logging.warning("Component: " + str(component) + " has std value more than threshold:"
                                 + str(self.std_threshold) + "std: " + str(std))
@@ -221,10 +226,6 @@ class Pipeline:
                       return_series=True, save_df: bool = False) -> Union[pd.DataFrame, TimeSeries]:
 
         end_time = start_time + timedelta(seconds=duration_seconds)
-
-        # tmp = start_time
-        # start_time = end_time
-        # end_time = tmp
 
         logging.debug("starting fetching queries for components: " + str(cols))
         logging.debug("start time: " + str(start_time) + " - end time: " + str(end_time))
@@ -390,7 +391,7 @@ class Pipeline:
             #customized saving merging
             for col_tmp in single_prediction.columns.tolist():
                 if col_tmp in cols_to_fetch:
-                    self.merged_series_dic[col_tmp].append(fetched_series[col_tmp])
+                    self.merged_series_dic[col_tmp].append(series_to_predict[col_tmp])
                 else:
                     self.merged_series_dic[col_tmp].append(prediction[col_tmp])
                 self.save_merged_series_dic()
@@ -403,6 +404,8 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(levelname)-4s %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S')
+
+
     parser = argparse.ArgumentParser(description="Pipeline")
     parser.add_argument('--pipeline-config', type=str,
                         help='url of to the pipeline config file')
