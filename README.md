@@ -61,4 +61,4 @@ Follow instruction in https://minikube.sigs.k8s.io/docs/start/
 
 ## 9. Install and Run Pipeline as a pod
 
-    helm install pipeline helm/pipeline/.
+    helm install pipeline kubernetes/helm/pipeline/.
